@@ -48,7 +48,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout }) => {
     <div className="flex flex-col min-h-screen w-full bg-[#f8f9fa] overflow-hidden selection:bg-[#ff4b9a]/20 font-sans">
       
       {/* Desktop Header - Fixed Glassmorphism (Height 80px) */}
-      <header className="hidden md:flex fixed top-0 left-0 right-0 h-[80px] items-center justify-between px-8 bg-white/90 backdrop-blur-xl border-b border-gray-200/50 z-[100] transition-all duration-300">
+      <header className="hidden md:flex fixed top-0 left-0 right-0 h-[80px] items-center justify-between px-8 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 z-[100] transition-all duration-300">
         <div className="flex items-center gap-12 h-full max-w-7xl mx-auto w-full">
             <div className="cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0" onClick={() => navigate('/home')}>
                 <Logo size="md" />
@@ -90,32 +90,31 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout }) => {
       </header>
 
       {/* Main Content Area */}
-      {/* Added pt-[80px] to match header height exactly so content doesn't hide behind it */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative pt-0 md:pt-[80px]">
-        <main className={`flex-1 overflow-y-auto custom-scrollbar w-full ${shouldHideNavMobile ? 'pb-safe-bottom' : (isHomePage ? 'pb-0' : 'pb-32 md:pb-10')}`}>
+        <main className={`flex-1 overflow-y-auto custom-scrollbar w-full ${shouldHideNavMobile ? 'pb-safe-bottom' : 'pb-32 md:pb-10'}`}>
           <div className="w-full min-h-full">
             {children}
           </div>
         </main>
 
-        {/* Mobile Bottom Nav - Floating Island Style */}
+        {/* Mobile Bottom Nav - Floating Modern Pill */}
         {!shouldHideNavMobile && (
-          <div className="md:hidden fixed bottom-6 left-4 right-4 z-50 pointer-events-none animate-in slide-in-from-bottom duration-500">
-            <nav className="w-full max-w-md mx-auto bg-white/90 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/50 rounded-2xl flex justify-around items-center h-[72px] px-2 pointer-events-auto">
+          <div className="md:hidden fixed bottom-5 left-4 right-4 z-50 pointer-events-none animate-in slide-in-from-bottom-4 duration-700 ease-out">
+            <nav className="w-full max-w-[400px] mx-auto bg-[#1a1a1a]/90 backdrop-blur-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-white/10 rounded-[2rem] flex justify-between items-center h-[70px] px-6 pointer-events-auto">
               {navItems.map((item) => {
                 const isActive = getIsActive(item.path, location.pathname);
                 return (
                   <NavLink
                     key={item.path}
                     to={item.path}
-                    className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-all duration-300 group active:scale-90`}
+                    className="relative flex items-center justify-center w-12 h-12 group"
                   >
-                    <div className={`relative p-2.5 rounded-2xl transition-all duration-300 ${isActive ? 'bg-[#ff4b9a] text-white shadow-lg shadow-pink-500/30 translate-y-[-4px]' : 'text-gray-400 group-hover:text-gray-600'}`}>
+                    {isActive && (
+                        <div className="absolute inset-0 bg-[#ff4b9a] rounded-full shadow-[0_0_15px_rgba(255,75,154,0.5)] animate-in zoom-in duration-300"></div>
+                    )}
+                    <div className={`relative z-10 transition-colors duration-300 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
                         <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                     </div>
-                    <span className={`text-[10px] font-bold transition-all duration-300 ${isActive ? 'text-[#ff4b9a] translate-y-[-2px]' : 'text-gray-400'}`}>
-                      {item.label}
-                    </span>
                   </NavLink>
                 );
               })}
