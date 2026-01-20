@@ -19,7 +19,7 @@ export const translations = {
     
     // Home
     home_hero_title: 'Rent Anything in Bangladesh',
-    home_hero_subtitle: 'Discover tools, electronics, cars, flats, and services — all verified, all in one place.',
+    home_hero_subtitle: 'Discover tools, electronics, cars, flats, and services - all verified, all in one place.',
     home_search_placeholder: 'Search for tools, cars, flats...',
     home_explore: 'Explore Marketplace',
     home_list_asset: 'List Your Asset',
@@ -85,7 +85,7 @@ export const translations = {
 
     // Home
     home_hero_title: 'বাংলাদেশে সবকিছু ভাড়া নিন',
-    home_hero_subtitle: 'টুলস, ইলেকট্রনিক্স, গাড়ি, ফ্ল্যাট এবং সেবা খুঁজুন — সব ভেরিফাইড।',
+    home_hero_subtitle: 'টুলস, ইলেকট্রনিক্স, গাড়ি, ফ্ল্যাট এবং সেবা খুঁজুন - সব ভেরিফাইড।',
     home_search_placeholder: 'টুলস, গাড়ি, ফ্ল্যাট খুঁজুন...',
     home_explore: 'মার্কেটপ্লেস দেখুন',
     home_list_asset: 'লিস্টিং করুন',

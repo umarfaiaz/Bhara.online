@@ -128,6 +128,8 @@ export interface Flat extends BaseAsset {
   has_parking?: boolean;
   is_furnished?: boolean;
 
+  amenities?: string[];
+
   // Shared Specific
   bed_no?: string;
   room_no?: string;
@@ -242,4 +244,51 @@ export interface Payment {
   paid_amount: number;
   paid_date: string;
   method: string;
+}
+
+export interface MaintenanceRequest {
+  id: string;
+  tenant_id: string;
+  asset_id: string; 
+  asset_name: string;
+  title: string;
+  description: string;
+  category: 'Plumbing' | 'Electrical' | 'Appliance' | 'Furniture' | 'Mechanical' | 'Other';
+  priority: 'Low' | 'Medium' | 'High';
+  status: 'Open' | 'In Progress' | 'Resolved';
+  created_at: string;
+  images?: string[];
+}
+
+// --- Chat Types ---
+export interface ChatSession {
+    id: string;
+    type: 'direct' | 'group';
+    participants: {
+        id: string;
+        name: string;
+        avatar: string;
+        role?: 'admin' | 'member';
+    }[];
+    name?: string; // For groups
+    image?: string; // For groups
+    lastMessage?: ChatMessage;
+    unreadCount: number;
+    updatedAt: string;
+    isVerified?: boolean;
+}
+
+export interface ChatMessage {
+    id: string;
+    chatId: string;
+    senderId: string;
+    text: string;
+    timestamp: string;
+    type: 'text' | 'image' | 'system' | 'action'; // action for things like 'Bill Paid'
+    status: 'sent' | 'delivered' | 'read';
+    actionData?: {
+        type: 'payment' | 'maintenance';
+        title: string;
+        amount?: number;
+    };
 }

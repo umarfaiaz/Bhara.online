@@ -44,17 +44,7 @@ const App: React.FC = () => {
     <LanguageProvider>
       <Router>
         <ScrollToTop />
-        <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center font-sans">
-          
-          {/* Desktop Background Decoration */}
-          <div className="fixed inset-0 pointer-events-none hidden sm:block">
-             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-50"></div>
-             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-             <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-          </div>
-
-          {/* Main App Container */}
-          <div className="w-full sm:max-w-[420px] md:max-w-[450px] min-h-screen sm:h-[90vh] sm:min-h-[800px] bg-white sm:rounded-[2.5rem] shadow-2xl sm:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] relative flex flex-col overflow-hidden sm:border-[8px] sm:border-white ring-1 ring-black/5">
+        <div className="min-h-screen bg-[#f8f9fa] text-gray-900 font-sans">
             <Routes>
               {/* Auth Routes (Redirect to dashboard if already logged in) */}
               <Route path="/login" element={isAuthenticated ? <Navigate to="/myspace/overview" /> : <Login onLogin={handleLogin} />} />
@@ -102,7 +92,6 @@ const App: React.FC = () => {
               <Route path="/tolet" element={<Navigate to="/marketplace" />} />
               <Route path="/" element={<Navigate to={isAuthenticated ? "/myspace/overview" : "/home"} />} />
             </Routes>
-          </div>
         </div>
       </Router>
     </LanguageProvider>

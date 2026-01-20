@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Plus, MapPin, Building2, Store, Briefcase, Users, Car, Scissors, ChevronRight, ChevronLeft, Minus, Trash2, AlertTriangle, MoreHorizontal, ArrowLeft, Home, Layers, CheckCircle2, LayoutGrid, DollarSign, BedDouble, Bath, Wind, Utensils, Armchair, Flame, Upload, UserPlus, Calendar, Send, Settings, PenTool, Zap, Shield, Warehouse, Camera, Bus, Truck, Bike, Ship, Edit3, X, User, Phone, Wifi, Video, Lock, Info, Compass, Droplets, Mic2, Star } from 'lucide-react';
+import { Plus, MapPin, Building2, Store, Briefcase, Users, Car, Scissors, ChevronRight, ChevronLeft, Minus, Trash2, AlertTriangle, MoreHorizontal, ArrowLeft, Home, Layers, CheckCircle2, LayoutGrid, DollarSign, BedDouble, Bath, Wind, Utensils, Armchair, Flame, Upload, UserPlus, Calendar, Send, Settings, PenTool, Zap, Shield, Warehouse, Camera, Bus, Truck, Bike, Ship, Edit3, X, User, Phone, Wifi, Video, Lock, Info, Compass, Droplets, Mic2, Star, CheckSquare, Tv, Grid, Fuel, Settings2, Monitor, Gamepad, Headphones, Music, FileText, Link } from 'lucide-react';
 import { DataService } from '../../services/mockData';
 import { CITIES, AREAS } from '../../constants';
 import { Building, Flat, Tenant, AssetType, Vehicle, Gadget, RentCycle, ServiceAsset } from '../../types';
 
-// --- Reusable Components ---
+// --- Reusable UI Components ---
 
 const Header: React.FC<{ 
     title: string; 
@@ -37,808 +37,595 @@ const Header: React.FC<{
     );
 };
 
-const SectionHeader: React.FC<{ title: string, action?: React.ReactNode }> = ({ title, action }) => (
-    <div className="flex justify-between items-center px-1 mb-3 mt-6 first:mt-2">
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-            {title}
-        </h3>
-        {action}
+const StepIndicator: React.FC<{ current: number, total: number }> = ({ current, total }) => (
+    <div className="flex items-center justify-center gap-2 mb-6">
+        {Array.from({ length: total }).map((_, i) => (
+            <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i + 1 <= current ? 'w-8 bg-[#ff4b9a]' : 'w-2 bg-gray-200'}`} />
+        ))}
     </div>
 );
 
-// --- Config Layout Wrapper ---
-const ConfigLayout: React.FC<{ 
-    title: string; 
-    onSave: () => void; 
-    saveLabel?: string;
-    children: React.ReactNode; 
-}> = ({ title, onSave, saveLabel = "Save Changes", children }) => {
-    return (
-        <div className="min-h-screen bg-white pb-32">
-             <Header title={title} showBack />
-             <div className="p-6">
-                {children}
-             </div>
-             <div className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t border-gray-100 safe-bottom z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
-                 <button onClick={onSave} className="w-full py-3.5 bg-[#ff4b9a] text-white font-bold rounded-xl shadow-lg shadow-pink-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                     <CheckCircle2 size={20} /> {saveLabel}
-                 </button>
-             </div>
-        </div>
-    );
-};
+const InputGroup: React.FC<{ label: string, children: React.ReactNode }> = ({ label, children }) => (
+    <div>
+        <label className="text-xs font-bold text-gray-500 mb-1.5 block">{label}</label>
+        {children}
+    </div>
+);
 
-// --- Main Asset List ---
+// --- ASSET LIST VIEW ---
 const AssetList: React.FC = () => {
   const navigate = useNavigate();
-  const [buildings, setBuildings] = useState<Building[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [gadgets, setGadgets] = useState<Gadget[]>([]);
-  const [services, setServices] = useState<ServiceAsset[]>([]);
+  const [buildings, setBuildings] = useState<Building[]>(DataService.getBuildings());
+  const [vehicles, setVehicles] = useState<Vehicle[]>(DataService.getVehicles());
+  const [gadgets, setGadgets] = useState<Gadget[]>(DataService.getGadgets());
+  const [services, setServices] = useState<ServiceAsset[]>(DataService.getServices());
 
-  useEffect(() => {
-    setBuildings(DataService.getBuildings());
-    setVehicles(DataService.getVehicles());
-    setGadgets(DataService.getGadgets());
-    setServices(DataService.getServices());
-  }, []);
+  const [activeTab, setActiveTab] = useState<'All' | 'Property' | 'Vehicle' | 'Gadget' | 'Service'>('All');
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa]">
+    <div className="min-h-screen bg-[#f8f9fa] pb-32">
       <Header 
-        title="My Properties" 
-        subtitle="Manage assets & inventory"
+        title="Inventory" 
+        subtitle="Manage assets & listings"
         action={
-            <button 
-                onClick={() => navigate('select-type')}
-                className="flex items-center gap-2 bg-[#2d1b4e] text-white px-4 py-2 rounded-xl shadow-[0_4px_14px_rgba(45,27,78,0.3)] active:scale-95 transition-all hover:shadow-[0_6px_20px_rgba(45,27,78,0.4)] hover:-translate-y-0.5"
-            >
-                <Plus size={18} strokeWidth={2.5} />
-                <span className="text-xs font-bold">Add New</span>
+            <button onClick={() => navigate('select-type')} className="flex items-center gap-2 bg-[#2d1b4e] text-white px-4 py-2 rounded-xl shadow-[0_4px_14px_rgba(45,27,78,0.3)] active:scale-95 transition-all">
+                <Plus size={18} strokeWidth={2.5} /> <span className="text-xs font-bold">Add</span>
             </button>
         }
       />
-
-      <div className="p-5 space-y-8 pb-32">
-        {/* Empty State */}
-        {buildings.length === 0 && vehicles.length === 0 && gadgets.length === 0 && services.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-50 rounded-[2rem] flex items-center justify-center mb-6 text-gray-300 shadow-inner border border-white">
-               <Home size={40} />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">No properties yet</h3>
-            <p className="text-sm text-gray-500 max-w-[200px] leading-relaxed">Add your first building, vehicle, or gadget to get started.</p>
-          </div>
-        )}
-
-        {/* Buildings Section */}
-        {buildings.length > 0 && (
-            <div>
-                <SectionHeader title="Real Estate" />
-                <div className="space-y-4">
-                    {buildings.map((building) => {
-                    const occupancyRate = building.flat_count ? Math.round(((building.occupied_count || 0) / building.flat_count) * 100) : 0;
-                    
-                    return (
-                        <div 
-                            key={building.id} 
-                            onClick={() => navigate(`manage-flats/${building.id}`)}
-                            className="group relative bg-white rounded-3xl p-5 border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_32px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer overflow-hidden hover:-translate-y-1"
-                        >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-50/80 to-transparent rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110 duration-500" />
-                            
-                            <div className="relative flex items-start gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-50 to-white border border-blue-100 text-blue-600 flex items-center justify-center shrink-0 shadow-sm group-hover:shadow-md transition-all">
-                                    <Building2 size={26} strokeWidth={1.5} />
-                                </div>
-                                <div className="flex-1 min-w-0 pt-1">
-                                    <h3 className="text-lg font-bold text-gray-900 truncate tracking-tight">{building.name}</h3>
-                                    <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
-                                        <MapPin size={12} className="text-blue-400" /> {building.area}, {building.city}
-                                    </p>
-                                </div>
-                                <button 
-                                    onClick={(e) => { e.stopPropagation(); navigate('config-building', { state: { type: building.type, editId: building.id } }); }}
-                                    className="w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-gray-100 hover:border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-900 transition-all z-10 shadow-sm"
-                                >
-                                    <Edit3 size={14} />
-                                </button>
-                            </div>
-
-                            <div className="mt-5 grid grid-cols-3 gap-2 relative z-10">
-                                <div className="bg-gray-50/80 backdrop-blur-sm rounded-2xl p-2.5 text-center border border-gray-100 group-hover:border-blue-100 group-hover:bg-blue-50/30 transition-all">
-                                    <span className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Units</span>
-                                    <span className="block text-sm font-extrabold text-gray-900">{building.flat_count}</span>
-                                </div>
-                                <div className="bg-gray-50/80 backdrop-blur-sm rounded-2xl p-2.5 text-center border border-gray-100 group-hover:border-blue-100 group-hover:bg-blue-50/30 transition-all">
-                                    <span className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Floors</span>
-                                    <span className="block text-sm font-extrabold text-gray-900">{building.floors}</span>
-                                </div>
-                                <div className="bg-gray-50/80 backdrop-blur-sm rounded-2xl p-2.5 text-center border border-gray-100 group-hover:border-blue-100 group-hover:bg-blue-50/30 transition-all">
-                                    <span className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Occupancy</span>
-                                    <span className={`block text-sm font-extrabold ${occupancyRate >= 80 ? 'text-green-600' : 'text-gray-900'}`}>{occupancyRate}%</span>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                    })}
-                </div>
-            </div>
-        )}
-
-        {/* Services Section */}
-        {services.length > 0 && (
-            <div>
-                <SectionHeader title="Services" />
-                <div className="space-y-4">
-                    {services.map((service) => (
-                        <div key={service.id} className="group relative bg-white rounded-3xl p-5 border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_32px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer overflow-hidden hover:-translate-y-1">
-                             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-50/80 to-transparent rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110 duration-500" />
-                             
-                             <div className="relative flex items-start gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-50 to-white border border-purple-100 text-purple-600 flex items-center justify-center shrink-0 shadow-sm group-hover:shadow-md transition-all">
-                                    <Briefcase size={26} strokeWidth={1.5} />
-                                </div>
-                                <div className="flex-1 min-w-0 pt-1">
-                                    <h3 className="text-lg font-bold text-gray-900 truncate tracking-tight">{service.name}</h3>
-                                    <p className="text-sm text-gray-500 mt-0.5">{service.category}</p>
-                                </div>
-                                <button 
-                                    onClick={() => navigate('config-service', { state: { editId: service.id } })}
-                                    className="w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-gray-100 hover:border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-900 transition-all z-10 shadow-sm"
-                                >
-                                    <Edit3 size={14} />
-                                </button>
-                             </div>
-
-                             <div className="mt-5 flex gap-2 relative z-10">
-                                {Object.keys(service.rates).map(r => (
-                                    <div key={r} className="flex-1 bg-gray-50/80 backdrop-blur-sm px-3 py-2 rounded-xl border border-gray-100 group-hover:border-purple-100 group-hover:bg-purple-50/30 transition-all">
-                                        <span className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{r} Rate</span>
-                                        <span className="block text-sm font-extrabold text-gray-900">৳ {service.rates[r as RentCycle]}</span>
-                                    </div>
-                                ))}
-                             </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )}
-
-        {/* Vehicles Section */}
-        {vehicles.length > 0 && (
-            <div>
-                <SectionHeader title="Vehicles" />
-                <div className="space-y-4">
-                    {vehicles.map((vehicle) => (
-                        <div key={vehicle.id} className="group relative bg-white rounded-3xl p-5 border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_32px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer overflow-hidden hover:-translate-y-1">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-50/80 to-transparent rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110 duration-500" />
-                            
-                            <div className="relative flex items-start gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 shadow-sm group-hover:shadow-md transition-all">
-                                    <Car size={26} strokeWidth={1.5} />
-                                </div>
-                                <div className="flex-1 min-w-0 pt-1">
-                                    <h3 className="text-lg font-bold text-gray-900 truncate tracking-tight">{vehicle.name}</h3>
-                                    <div className="mt-1">
-                                        <span className="bg-gray-100 text-gray-600 text-[10px] font-bold font-mono px-2 py-1 rounded-lg border border-gray-200">{vehicle.license_plate}</span>
-                                    </div>
-                                </div>
-                                <button 
-                                    onClick={() => navigate('config-vehicle', { state: { editId: vehicle.id } })}
-                                    className="w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-gray-100 hover:border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-900 transition-all z-10 shadow-sm"
-                                >
-                                    <Edit3 size={14} />
-                                </button>
-                            </div>
-
-                            <div className="mt-5 flex items-center justify-between bg-gray-50/80 backdrop-blur-sm rounded-2xl p-3 px-4 border border-gray-100 group-hover:border-indigo-100 group-hover:bg-indigo-50/30 transition-all relative z-10">
-                                <div className="flex items-center gap-2">
-                                     <div className={`w-2 h-2 rounded-full ${vehicle.status === 'active' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'}`}></div>
-                                     <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">{vehicle.status === 'active' ? 'Available' : 'Rented'}</span>
-                                </div>
-                                <div className="text-right">
-                                    <span className="block text-[10px] font-bold text-gray-400 uppercase">Daily Rate</span>
-                                    <span className="block text-sm font-extrabold text-gray-900">৳ {vehicle.rates['Daily'] || 0}</span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )}
-
-        {/* Gadgets Section */}
-        {gadgets.length > 0 && (
-            <div>
-                <SectionHeader title="Equipment" />
-                <div className="space-y-4">
-                    {gadgets.map((gadget) => (
-                         <div key={gadget.id} className="group relative bg-white rounded-3xl p-5 border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_32px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer overflow-hidden hover:-translate-y-1">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-50/80 to-transparent rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110 duration-500" />
-                            
-                            <div className="relative flex items-start gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-50 to-white border border-orange-100 text-orange-600 flex items-center justify-center shrink-0 shadow-sm group-hover:shadow-md transition-all">
-                                    <Camera size={26} strokeWidth={1.5} />
-                                </div>
-                                <div className="flex-1 min-w-0 pt-1">
-                                    <h3 className="text-lg font-bold text-gray-900 truncate tracking-tight">{gadget.name}</h3>
-                                    <p className="text-sm text-gray-500 mt-0.5">{gadget.brand} {gadget.model}</p>
-                                </div>
-                                <button 
-                                    onClick={() => navigate('config-gadget', { state: { editId: gadget.id } })}
-                                    className="w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-gray-100 hover:border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-900 transition-all z-10 shadow-sm"
-                                >
-                                    <Edit3 size={14} />
-                                </button>
-                            </div>
-
-                            <div className="mt-5 flex items-center justify-between bg-gray-50/80 backdrop-blur-sm rounded-2xl p-3 px-4 border border-gray-100 group-hover:border-orange-100 group-hover:bg-orange-50/30 transition-all relative z-10">
-                                <div className="flex items-center gap-2">
-                                     <div className={`w-2 h-2 rounded-full ${gadget.status === 'active' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'}`}></div>
-                                     <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">{gadget.status === 'active' ? 'Available' : 'Rented'}</span>
-                                </div>
-                                <div className="text-right">
-                                    <span className="block text-[10px] font-bold text-gray-400 uppercase">Daily Rate</span>
-                                    <span className="block text-sm font-extrabold text-gray-900">৳ {gadget.rates['Daily'] || 0}</span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// --- Asset Type Selection ---
-const SelectType: React.FC = () => {
-  const navigate = useNavigate();
-  
-  const types = [
-    { label: 'Flat / Building', sub: 'Residential', icon: Building2, path: '/myspace/inventory/config-building', type: 'Residential', color: 'text-[#ff4b9a]', bg: 'bg-pink-50' },
-    { label: 'Shop / Market', sub: 'Commercial', icon: Store, path: '/myspace/inventory/config-building', type: 'Commercial', color: 'text-purple-600', bg: 'bg-purple-50' },
-    { label: 'Hostel / Mess', sub: 'Shared Living', icon: Users, path: '/myspace/inventory/config-building', type: 'Shared', color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Event Space', sub: 'Party Center, Hall', icon: Calendar, path: '/myspace/inventory/config-service', type: 'Event Space', color: 'text-fuchsia-600', bg: 'bg-fuchsia-50' },
-    { label: 'Professional / Skill', sub: 'Photographer, Band', icon: Briefcase, path: '/myspace/inventory/config-service', type: 'Professional', color: 'text-cyan-600', bg: 'bg-cyan-50' },
-    { label: 'General Service', sub: 'Cleaning, Decor', icon: Mic2, path: '/myspace/inventory/config-service', type: 'Service', color: 'text-lime-600', bg: 'bg-lime-50' },
-    { label: 'Vehicles', sub: 'Car, Bike, Truck', icon: Car, path: '/myspace/inventory/config-vehicle', type: 'Vehicle', color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { label: 'Equipment', sub: 'Camera, Tools', icon: Scissors, path: '/myspace/inventory/config-gadget', type: 'Gadget', color: 'text-orange-600', bg: 'bg-orange-50' },
-  ];
-
-  return (
-    <div className="min-h-screen bg-white">
-      <Header title="Select Type" subtitle="What kind of asset is this?" showBack />
       
-      <div className="p-6">
-        <div className="grid grid-cols-2 gap-4">
-          {types.map((type, i) => (
-            <button 
-              key={i} 
-              onClick={() => navigate(type.path, { state: { type: type.type } })}
-              className="p-5 rounded-2xl border border-gray-100 shadow-sm hover:border-gray-200 hover:bg-gray-50 active:scale-95 bg-white flex flex-col items-center gap-3 text-center transition-all duration-200"
-            >
-              <div className={`w-12 h-12 rounded-full ${type.bg} flex items-center justify-center mb-1`}>
-                <type.icon size={24} strokeWidth={2} className={type.color} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 leading-tight mb-1">{type.label}</h3>
-                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">{type.sub}</p>
-              </div>
-            </button>
+      {/* Filter Tabs */}
+      <div className="px-5 py-2 flex gap-2 overflow-x-auto scrollbar-hide">
+          {['All', 'Property', 'Vehicle', 'Gadget', 'Service'].map(tab => (
+              <button 
+                key={tab} 
+                onClick={() => setActiveTab(tab as any)} 
+                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${activeTab === tab ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}
+              >
+                  {tab}
+              </button>
           ))}
-        </div>
+      </div>
+
+      <div className="p-5 space-y-4">
+          {/* Properties */}
+          {(activeTab === 'All' || activeTab === 'Property') && buildings.map(b => (
+              <div key={b.id} onClick={() => navigate(`manage-flats/${b.id}`)} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 cursor-pointer active:scale-[0.99] transition-transform">
+                  <div className="flex justify-between items-start">
+                      <div className="flex gap-4">
+                          <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                              <Building2 size={24} />
+                          </div>
+                          <div>
+                              <h3 className="font-bold text-gray-900">{b.name}</h3>
+                              <p className="text-xs text-gray-500">{b.area}, {b.city}</p>
+                              <div className="flex gap-2 mt-2">
+                                  <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded font-bold text-gray-600">{b.flat_count} Flats</span>
+                                  <span className="text-[10px] bg-green-50 px-2 py-0.5 rounded font-bold text-green-600">{b.occupied_count} Occupied</span>
+                              </div>
+                          </div>
+                      </div>
+                      <ChevronRight size={20} className="text-gray-300" />
+                  </div>
+              </div>
+          ))}
+
+          {/* Vehicles */}
+          {(activeTab === 'All' || activeTab === 'Vehicle') && vehicles.map(v => (
+              <div key={v.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+                  <div className="flex gap-4">
+                      <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                          <Car size={24} />
+                      </div>
+                      <div>
+                          <h3 className="font-bold text-gray-900">{v.name}</h3>
+                          <p className="text-xs text-gray-500">{v.license_plate}</p>
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-bold mt-1 inline-block ${v.status === 'rented' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'}`}>
+                              {v.status === 'rented' ? 'Rented' : 'Available'}
+                          </span>
+                      </div>
+                  </div>
+                  <div className="text-right">
+                      <p className="text-sm font-bold">৳{v.rates['Daily']}/day</p>
+                  </div>
+              </div>
+          ))}
+
+          {/* Gadgets */}
+          {(activeTab === 'All' || activeTab === 'Gadget') && gadgets.map(g => (
+              <div key={g.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+                  <div className="flex gap-4">
+                      <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600">
+                          <Camera size={24} />
+                      </div>
+                      <div>
+                          <h3 className="font-bold text-gray-900">{g.name}</h3>
+                          <p className="text-xs text-gray-500">{g.brand} {g.model}</p>
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-bold mt-1 inline-block ${g.status === 'rented' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'}`}>
+                              {g.status}
+                          </span>
+                      </div>
+                  </div>
+                  <div className="text-right">
+                      <p className="text-sm font-bold">৳{g.rates['Daily']}/day</p>
+                  </div>
+              </div>
+          ))}
+          
+          {/* Services */}
+          {(activeTab === 'All' || activeTab === 'Service') && services.map(s => (
+              <div key={s.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+                  <div className="flex gap-4">
+                      <div className="w-12 h-12 bg-pink-50 rounded-xl flex items-center justify-center text-pink-600">
+                          <Briefcase size={24} />
+                      </div>
+                      <div>
+                          <h3 className="font-bold text-gray-900">{s.name}</h3>
+                          <p className="text-xs text-gray-500">{s.category}</p>
+                      </div>
+                  </div>
+              </div>
+          ))}
+
+          {/* Empty State */}
+          {buildings.length === 0 && vehicles.length === 0 && gadgets.length === 0 && services.length === 0 && (
+              <div className="text-center py-20 text-gray-400">
+                  <Warehouse size={48} className="mx-auto mb-3 opacity-20"/>
+                  <p>Your inventory is empty.</p>
+              </div>
+          )}
       </div>
     </div>
   );
 };
 
-const ServiceConfig: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const assetType = location.state?.type as AssetType || 'Service';
-  const editId = location.state?.editId;
-
-  const [formData, setFormData] = useState<Partial<ServiceAsset>>({
-      type: assetType as any,
-      rates: { 'Hourly': 0 },
-      status: 'active',
-      name: '',
-      category: '',
-      description: '',
-      location: ''
-  });
-
-  useEffect(() => {
-      if(editId) {
-          const service = DataService.getServiceById(editId);
-          if(service) setFormData(service);
-      }
-  }, [editId]);
-
-  const updateField = (field: keyof ServiceAsset, value: any) => setFormData(prev => ({...prev, [field]: value}));
-  const updateRate = (cycle: RentCycle, amount: number) => {
-      setFormData(prev => ({
-          ...prev,
-          rates: { ...prev.rates, [cycle]: amount }
-      }));
-  };
-
-  const handleSave = () => {
-    if (formData.name && formData.category) {
-      if(editId) DataService.updateService(editId, formData);
-      else DataService.addService(formData as any);
-      navigate('/myspace/inventory');
-    } else {
-      alert("Please fill required fields (Name, Category)");
-    }
-  };
-
-  const RENT_CYCLES: RentCycle[] = ['Hourly', 'Daily', 'Weekly', 'Monthly'];
-
-  return (
-    <ConfigLayout 
-        title={editId ? 'Edit Listing' : 'Add Listing'} 
-        onSave={handleSave} 
-        saveLabel={editId ? "Update Listing" : "Add Listing"}
-    >
-        <div className="space-y-6">
-            <SectionHeader title={`${assetType} Details`} />
-            <div className="space-y-4">
-                <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-2">Title / Name <span className="text-red-500">*</span></label>
-                    <input type="text" value={formData.name || ''} onChange={e => updateField('name', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" placeholder={assetType === 'Professional' ? "e.g. John Doe Photography" : "e.g. Grand Hall"}/>
-                </div>
-                <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-2">Category <span className="text-red-500">*</span></label>
-                    <input type="text" value={formData.category || ''} onChange={e => updateField('category', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" placeholder={assetType === 'Professional' ? "e.g. Photographer" : "e.g. Venue"}/>
-                </div>
-                <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-2">Description</label>
-                    <textarea value={formData.description || ''} onChange={e => updateField('description', e.target.value)} rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" placeholder="Describe skills, capacity, etc."/>
-                </div>
-                {assetType === 'Event Space' && (
-                    <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">Location</label>
-                        <input type="text" value={formData.location || ''} onChange={e => updateField('location', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" placeholder="e.g. Gulshan 1"/>
-                    </div>
-                )}
-            </div>
-
-            <SectionHeader title="Pricing Rates" />
-            <div className="space-y-3">
-                 {RENT_CYCLES.map((cycle) => (
-                    <div key={cycle} className="flex items-center justify-between bg-white rounded-xl border border-gray-200 p-3">
-                        <span className="text-sm font-medium text-gray-700">{cycle} Rate</span>
-                        <div className="flex items-center">
-                            <span className="text-gray-400 text-sm font-bold mr-2">৳</span>
-                            <input 
-                                type="number" 
-                                value={formData.rates?.[cycle as RentCycle] || ''} 
-                                onChange={e => updateRate(cycle as RentCycle, parseInt(e.target.value) || 0)} 
-                                className="w-24 text-right font-medium text-gray-900 outline-none bg-transparent" 
-                                placeholder="0"
-                            />
+// --- SELECT TYPE ---
+const SelectType: React.FC = () => {
+    const navigate = useNavigate();
+    const types = [
+        { label: 'Building', sub: 'Apartments, Hostels', icon: Building2, path: '/myspace/inventory/config-building', color: 'text-blue-600 bg-blue-50' },
+        { label: 'Vehicle', sub: 'Cars, Bikes, Trucks', icon: Car, path: '/myspace/inventory/config-vehicle', color: 'text-indigo-600 bg-indigo-50' },
+        { label: 'Gadget', sub: 'Cameras, Laptops', icon: Camera, path: '/myspace/inventory/config-gadget', color: 'text-purple-600 bg-purple-50' },
+        { label: 'Service', sub: 'Photography, Event', icon: Briefcase, path: '/myspace/inventory/config-service', color: 'text-pink-600 bg-pink-50' },
+    ];
+    return (
+        <div className="min-h-screen bg-white">
+            <Header title="Add to Inventory" showBack/>
+            <div className="p-6 grid grid-cols-1 gap-4">
+                {types.map((t, i) => (
+                    <button key={i} onClick={() => navigate(t.path)} className="p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-5 text-left hover:border-gray-300 hover:shadow-md transition-all active:scale-[0.98]">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${t.color}`}>
+                            <t.icon size={28}/>
                         </div>
-                    </div>
-                 ))}
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900">{t.label}</h3>
+                            <p className="text-sm text-gray-500">{t.sub}</p>
+                        </div>
+                        <div className="ml-auto bg-gray-50 p-2 rounded-full text-gray-400">
+                            <ChevronRight size={20}/>
+                        </div>
+                    </button>
+                ))}
             </div>
         </div>
-    </ConfigLayout>
-  );
-};
+    )
+}
 
+// --- BUILDING CONFIGURATION ---
 const BuildingConfig: React.FC = () => {
     const navigate = useNavigate();
-    const location = useLocation();
-    const assetType = location.state?.type as AssetType || 'Residential';
-    const editId = location.state?.editId;
-
     const [formData, setFormData] = useState<Partial<Building>>({
-        type: assetType,
-        city: 'Dhaka',
-        area: '',
-        name: '',
-        address: '',
-        floors: 1,
-        flat_count: 0,
-        amenities: []
+        name: '', city: 'Dhaka', area: '', address: '', floors: 6, amenities: [], listing_description: ''
     });
-
-    useEffect(() => {
-        if(editId) {
-            const b = DataService.getBuildingById(editId);
-            if(b) setFormData(b);
-        }
-    }, [editId]);
-
-    const updateField = (field: keyof Building, value: any) => setFormData(prev => ({...prev, [field]: value}));
 
     const handleSave = () => {
         if(formData.name && formData.area) {
-            if(editId) DataService.updateBuilding(editId, formData);
-            else DataService.addBuilding(formData as any);
+            DataService.addBuilding(formData as Building);
             navigate('/myspace/inventory');
-        } else {
-            alert("Please fill required fields.");
         }
     };
 
+    const toggleAmenity = (a: string) => {
+        const list = formData.amenities?.includes(a) 
+            ? formData.amenities.filter(x => x !== a) 
+            : [...(formData.amenities || []), a];
+        setFormData({ ...formData, amenities: list });
+    };
+
     return (
-        <ConfigLayout title={editId ? 'Edit Property' : 'Add Property'} onSave={handleSave}>
-             <div className="space-y-6">
-                <SectionHeader title="Property Details" />
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">Property Name <span className="text-red-500">*</span></label>
-                        <input type="text" value={formData.name} onChange={e => updateField('name', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" placeholder="e.g. Khan Monjil" />
-                    </div>
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            <Header title="Add Building" showBack />
+            <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                    <InputGroup label="Property Name">
+                        <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 font-bold outline-none focus:border-[#ff4b9a]" placeholder="e.g. Dream Heights"/>
+                    </InputGroup>
                     <div className="grid grid-cols-2 gap-4">
-                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-2">City</label>
-                            <select value={formData.city} onChange={e => updateField('city', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10">
+                        <InputGroup label="City">
+                            <select value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 font-bold outline-none">
                                 {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
-                        </div>
-                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-2">Area <span className="text-red-500">*</span></label>
-                            <select value={formData.area} onChange={e => updateField('area', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10">
-                                <option value="">Select Area</option>
-                                {(AREAS[formData.city] || []).map(a => <option key={a} value={a}>{a}</option>)}
-                            </select>
-                        </div>
+                        </InputGroup>
+                        <InputGroup label="Total Floors">
+                            <input type="number" value={formData.floors} onChange={e => setFormData({...formData, floors: parseInt(e.target.value)})} className="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 font-bold outline-none"/>
+                        </InputGroup>
                     </div>
-                    <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">Full Address</label>
-                        <textarea rows={2} value={formData.address} onChange={e => updateField('address', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" placeholder="House #, Road #, Block..." />
-                    </div>
+                    <InputGroup label="Area / Neighborhood">
+                        <input type="text" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} className="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 font-bold outline-none" placeholder="e.g. Uttara Sector 4"/>
+                    </InputGroup>
+                    <InputGroup label="Full Address">
+                        <textarea value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 font-bold outline-none" rows={3} placeholder="House, Road, Block..."/>
+                    </InputGroup>
+                    <InputGroup label="Short Description">
+                        <textarea value={formData.listing_description} onChange={e => setFormData({...formData, listing_description: e.target.value})} className="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 font-bold outline-none" rows={2} placeholder="Quiet residential area..."/>
+                    </InputGroup>
                 </div>
 
-                <SectionHeader title="Structure" />
-                <div className="grid grid-cols-2 gap-4">
-                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">Total Floors</label>
-                        <input type="number" value={formData.floors} onChange={e => updateField('floors', parseInt(e.target.value))} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">Total Units</label>
-                        <input type="number" value={formData.flat_count} onChange={e => updateField('flat_count', parseInt(e.target.value))} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" />
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                    <h3 className="font-bold text-gray-900 mb-4">Facilities & Security</h3>
+                    <div className="grid grid-cols-3 gap-3">
+                        {['Lift', 'Generator', 'Gas', 'CCTV', 'Guard', 'WiFi', 'Parking', 'Fire Safety', 'Gym'].map(item => (
+                            <button 
+                                key={item} 
+                                onClick={() => toggleAmenity(item)}
+                                className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${formData.amenities?.includes(item) ? 'bg-[#ff4b9a] text-white border-[#ff4b9a]' : 'bg-gray-50 text-gray-500 border-transparent'}`}
+                            >
+                                {item}
+                            </button>
+                        ))}
                     </div>
                 </div>
-             </div>
-        </ConfigLayout>
+            </div>
+            <div className="p-5 bg-white border-t border-gray-100 safe-bottom">
+                <button onClick={handleSave} className="w-full py-4 bg-[#2d1b4e] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Create Building</button>
+            </div>
+        </div>
     );
 };
 
-const VehicleConfig: React.FC = () => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const editId = location.state?.editId;
-
-    const [formData, setFormData] = useState<Partial<Vehicle>>({
-        type: 'Car',
-        status: 'active',
-        name: '',
-        license_plate: '',
-        rates: { 'Daily': 0, 'Monthly': 0 }
-    });
-
-    useEffect(() => {
-        if(editId) {
-            const v = DataService.getVehicleById(editId);
-            if(v) setFormData(v);
-        }
-    }, [editId]);
-
-    const updateField = (field: keyof Vehicle, value: any) => setFormData(prev => ({...prev, [field]: value}));
-    const updateRate = (cycle: RentCycle, amount: number) => setFormData(prev => ({ ...prev, rates: { ...prev.rates, [cycle]: amount } }));
-
-    const handleSave = () => {
-        if(formData.name && formData.license_plate) {
-            if(editId) DataService.updateVehicle(editId, formData);
-            else DataService.addVehicle(formData as any);
-            navigate('/myspace/inventory');
-        } else {
-             alert("Please fill required fields.");
-        }
-    }
-
-    return (
-        <ConfigLayout title={editId ? 'Edit Vehicle' : 'Add Vehicle'} onSave={handleSave}>
-             <div className="space-y-6">
-                 <SectionHeader title="Vehicle Info" />
-                 <div className="space-y-4">
-                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">Vehicle Name <span className="text-red-500">*</span></label>
-                        <input type="text" value={formData.name} onChange={e => updateField('name', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" placeholder="e.g. Toyota Axio 2018" />
-                     </div>
-                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">License Plate <span className="text-red-500">*</span></label>
-                        <input type="text" value={formData.license_plate} onChange={e => updateField('license_plate', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" placeholder="e.g. DHA-MET-GA-12..." />
-                     </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                             <label className="block text-xs font-bold text-gray-700 mb-2">Type</label>
-                             <select value={formData.type} onChange={e => updateField('type', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10">
-                                 {['Car', 'Bike', 'Bus', 'Truck', 'Van'].map(t => <option key={t} value={t}>{t}</option>)}
-                             </select>
-                        </div>
-                        <div>
-                             <label className="block text-xs font-bold text-gray-700 mb-2">Transmission</label>
-                             <select value={formData.transmission} onChange={e => updateField('transmission', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10">
-                                 <option value="Auto">Auto</option>
-                                 <option value="Manual">Manual</option>
-                             </select>
-                        </div>
-                     </div>
-                 </div>
-
-                 <SectionHeader title="Rental Rates" />
-                 <div className="space-y-3">
-                     {['Daily', 'Monthly'].map((cycle) => (
-                        <div key={cycle} className="flex items-center justify-between bg-white rounded-xl border border-gray-200 p-3">
-                            <span className="text-sm font-medium text-gray-700">{cycle} Rate</span>
-                            <div className="flex items-center">
-                                <span className="text-gray-400 text-sm font-bold mr-2">৳</span>
-                                <input 
-                                    type="number" 
-                                    value={formData.rates?.[cycle as RentCycle] || ''} 
-                                    onChange={e => updateRate(cycle as RentCycle, parseInt(e.target.value) || 0)} 
-                                    className="w-24 text-right font-medium text-gray-900 outline-none bg-transparent" 
-                                    placeholder="0"
-                                />
-                            </div>
-                        </div>
-                     ))}
-                 </div>
-             </div>
-        </ConfigLayout>
-    );
-};
-
-const GadgetConfig: React.FC = () => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const editId = location.state?.editId;
-
-    const [formData, setFormData] = useState<Partial<Gadget>>({
-        category: 'Camera',
-        status: 'active',
-        name: '',
-        rates: { 'Daily': 0, 'Weekly': 0 },
-        brand: '',
-        model: ''
-    });
-
-    useEffect(() => {
-        if(editId) {
-            const g = DataService.getGadgetById(editId);
-            if(g) setFormData(g);
-        }
-    }, [editId]);
-
-    const updateField = (field: keyof Gadget, value: any) => setFormData(prev => ({...prev, [field]: value}));
-    const updateRate = (cycle: RentCycle, amount: number) => setFormData(prev => ({ ...prev, rates: { ...prev.rates, [cycle]: amount } }));
-
-    const handleSave = () => {
-        if(formData.name && formData.category) {
-            if(editId) DataService.updateGadget(editId, formData);
-            else DataService.addGadget(formData as any);
-            navigate('/myspace/inventory');
-        } else {
-             alert("Please fill required fields.");
-        }
-    }
-
-    return (
-        <ConfigLayout title={editId ? 'Edit Equipment' : 'Add Equipment'} onSave={handleSave}>
-             <div className="space-y-6">
-                 <SectionHeader title="Equipment Details" />
-                 <div className="space-y-4">
-                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">Item Name <span className="text-red-500">*</span></label>
-                        <input type="text" value={formData.name} onChange={e => updateField('name', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" placeholder="e.g. Sony A7III" />
-                     </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                             <label className="block text-xs font-bold text-gray-700 mb-2">Category</label>
-                             <input type="text" value={formData.category} onChange={e => updateField('category', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" placeholder="e.g. Camera" />
-                        </div>
-                        <div>
-                             <label className="block text-xs font-bold text-gray-700 mb-2">Brand</label>
-                             <input type="text" value={formData.brand} onChange={e => updateField('brand', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" placeholder="e.g. Sony" />
-                        </div>
-                     </div>
-                 </div>
-
-                 <SectionHeader title="Rental Rates" />
-                 <div className="space-y-3">
-                     {['Daily', 'Weekly'].map((cycle) => (
-                        <div key={cycle} className="flex items-center justify-between bg-white rounded-xl border border-gray-200 p-3">
-                            <span className="text-sm font-medium text-gray-700">{cycle} Rate</span>
-                            <div className="flex items-center">
-                                <span className="text-gray-400 text-sm font-bold mr-2">৳</span>
-                                <input 
-                                    type="number" 
-                                    value={formData.rates?.[cycle as RentCycle] || ''} 
-                                    onChange={e => updateRate(cycle as RentCycle, parseInt(e.target.value) || 0)} 
-                                    className="w-24 text-right font-medium text-gray-900 outline-none bg-transparent" 
-                                    placeholder="0"
-                                />
-                            </div>
-                        </div>
-                     ))}
-                 </div>
-             </div>
-        </ConfigLayout>
-    );
-};
-
+// --- MANAGE FLATS ---
 const ManageFlats: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const building = DataService.getBuildingById(id!);
-    const flats = DataService.getFlats(id!);
+    const flats = DataService.getFlats(id);
+
+    if (!building) return <div>Loading...</div>;
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24">
-            <Header 
-                title={building?.name || 'Building'} 
-                subtitle={`${building?.area}, ${building?.city}`} 
-                showBack 
-                onBack={() => navigate('/myspace/inventory')}
-                action={
-                    <button onClick={() => navigate('/myspace/inventory/config-flat', { state: { buildingId: id } })} className="w-8 h-8 bg-[#2d1b4e] text-white rounded-full flex items-center justify-center shadow-md hover:bg-black transition-colors">
-                        <Plus size={18} />
-                    </button>
-                }
-            />
+        <div className="min-h-screen bg-gray-50 pb-32">
+            <div className="bg-white sticky top-0 z-40 border-b border-gray-100">
+                <Header title={building.name} subtitle={`${building.area} • ${flats.length} Units`} showBack/>
+            </div>
             
-            <div className="p-5 space-y-3">
-                {flats.map(flat => (
-                    <div key={flat.id} onClick={() => navigate('/myspace/inventory/config-flat', { state: { editId: flat.id, buildingId: id } })} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer hover:border-gray-300 transition-colors">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${flat.is_vacant ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                {flat.flat_no}
-                            </div>
+            <div className="p-5">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-gray-900">Unit List</h3>
+                    <button 
+                        onClick={() => navigate('/myspace/inventory/config-flat', { state: { buildingId: id } })}
+                        className="bg-[#ff4b9a] text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow-md active:scale-95"
+                    >
+                        <Plus size={14}/> Add Flat
+                    </button>
+                </div>
+
+                <div className="space-y-3">
+                    {flats.map(flat => (
+                        <div key={flat.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
                             <div>
-                                <h4 className="font-bold text-gray-900 text-sm">Floor {flat.floor_no}</h4>
-                                <p className="text-xs text-gray-500 mt-0.5">{flat.bedrooms} Bed • {flat.size_sqft} sqft</p>
+                                <h4 className="font-bold text-gray-900 text-lg">Flat {flat.flat_no}</h4>
+                                <p className="text-xs text-gray-500">{flat.floor_no}th Floor • {flat.size_sqft} sqft</p>
+                                <p className="text-xs font-bold text-gray-900 mt-1">৳ {flat.monthly_rent.toLocaleString()}</p>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                                <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${flat.is_vacant ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    {flat.is_vacant ? 'Vacant' : 'Occupied'}
+                                </span>
+                                <button 
+                                    onClick={() => navigate('/myspace/inventory/config-flat', { state: { buildingId: id, editId: flat.id } })}
+                                    className="p-2 bg-gray-50 rounded-full text-gray-500 hover:text-[#ff4b9a] hover:bg-pink-50 transition-colors"
+                                >
+                                    <Settings2 size={16}/>
+                                </button>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <p className="font-bold text-gray-900 text-sm">৳ {flat.monthly_rent.toLocaleString()}</p>
-                            <p className={`text-[10px] font-bold uppercase tracking-wide mt-1 ${flat.is_vacant ? 'text-green-500' : 'text-gray-400'}`}>
-                                {flat.is_vacant ? 'Vacant' : 'Occupied'}
-                            </p>
+                    ))}
+                    {flats.length === 0 && (
+                        <div className="text-center py-10 text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200">
+                            <p>No flats added yet.</p>
+                            <button onClick={() => navigate('/myspace/inventory/config-flat', { state: { buildingId: id } })} className="text-[#ff4b9a] font-bold text-sm mt-2">Add First Flat</button>
                         </div>
-                    </div>
-                ))}
-                {flats.length === 0 && (
-                    <div className="text-center py-10 text-gray-400">
-                        <p>No units added yet.</p>
-                        <button onClick={() => navigate('/myspace/inventory/config-flat', { state: { buildingId: id } })} className="mt-2 text-[#ff4b9a] font-bold text-sm">Add First Unit</button>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );
 };
 
+// --- FLAT CONFIGURATION (Consolidated) ---
 const FlatConfig: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const buildingId = location.state?.buildingId;
     const editId = location.state?.editId;
-
-    const [formData, setFormData] = useState<Partial<Flat>>({
+    const [step, setStep] = useState(1);
+    const [formData, setFormData] = useState<Partial<Flat> & { amenities: string[], list_on_marketplace: boolean }>({
         building_id: buildingId,
-        flat_no: '',
-        floor_no: 1,
-        bedrooms: 3,
-        washrooms: 2,
-        balconies: 2,
-        size_sqft: 1200,
-        monthly_rent: 0,
-        service_charge: 0,
-        rent_type: 'Monthly',
-        is_vacant: true,
-        // Default util
-        gas_bill: 0,
-        water_bill: 0
+        flat_no: '', floor_no: 1, bedrooms: 3, washrooms: 2, balconies: 2, size_sqft: 1200,
+        monthly_rent: 0, service_charge: 0, gas_bill: 0, water_bill: 0, rent_type: 'Monthly',
+        is_vacant: true, amenities: [], facing: 'South', furnishing: 'Unfurnished', list_on_marketplace: false
     });
 
     useEffect(() => {
         if(editId) {
             const f = DataService.getFlatById(editId);
-            if(f) setFormData(f);
+            if(f) setFormData({ ...f, amenities: f.amenities || [], list_on_marketplace: f.is_listed || false });
         }
     }, [editId]);
 
-    const updateField = (field: keyof Flat, value: any) => setFormData(prev => ({...prev, [field]: value}));
+    const update = (k: string, v: any) => setFormData(p => ({...p, [k]: v}));
+    const toggleAmenity = (a: string) => setFormData(p => ({ ...p, amenities: p.amenities.includes(a) ? p.amenities.filter(x => x !== a) : [...p.amenities, a] }));
+    const save = () => {
+        if(formData.flat_no && formData.monthly_rent) {
+            const payload = { ...formData, is_listed: formData.list_on_marketplace };
+            editId ? DataService.updateFlat(editId, payload) : DataService.addFlat(payload);
+            navigate(-1);
+        }
+    };
+
+    const Counter = ({ label, value, onChange }: any) => (
+        <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100">
+            <span className="text-sm font-bold text-gray-700">{label}</span>
+            <div className="flex items-center gap-3">
+                <button onClick={() => onChange(Math.max(0, value - 1))} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><Minus size={16}/></button>
+                <span className="font-bold w-4 text-center">{value}</span>
+                <button onClick={() => onChange(value + 1)} className="w-8 h-8 bg-[#2d1b4e] text-white rounded-full flex items-center justify-center"><Plus size={16}/></button>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            <Header title={editId ? `Edit ${formData.flat_no}` : 'Configure Flat'} showBack subtitle={`Step ${step} of 3`}/>
+            <div className="flex-1 p-6 pb-32 space-y-6 overflow-y-auto">
+                <StepIndicator current={step} total={3} />
+                {step === 1 && (
+                    <div className="space-y-6 animate-in slide-in-from-right">
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2"><LayoutGrid size={18}/> Structure</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <InputGroup label="Flat No"><input type="text" value={formData.flat_no} onChange={e => update('flat_no', e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" placeholder="4A"/></InputGroup>
+                                <InputGroup label="Floor"><input type="number" value={formData.floor_no} onChange={e => update('floor_no', parseInt(e.target.value))} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/></InputGroup>
+                            </div>
+                            <InputGroup label="Size (Sqft)"><input type="number" value={formData.size_sqft} onChange={e => update('size_sqft', parseInt(e.target.value))} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/></InputGroup>
+                        </div>
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-3">
+                            <Counter label="Bedrooms" value={formData.bedrooms} onChange={(v:any) => update('bedrooms', v)} />
+                            <Counter label="Bathrooms" value={formData.washrooms} onChange={(v:any) => update('washrooms', v)} />
+                            <Counter label="Balconies" value={formData.balconies} onChange={(v:any) => update('balconies', v)} />
+                        </div>
+                    </div>
+                )}
+                {step === 2 && (
+                    <div className="space-y-6 animate-in slide-in-from-right">
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2"><Armchair size={18}/> Features</h3>
+                            <div className="grid grid-cols-1 gap-2">
+                                {['Unfurnished', 'Semi-Furnished', 'Fully-Furnished'].map(f => (
+                                    <button key={f} onClick={() => update('furnishing', f)} className={`p-3 rounded-xl border flex justify-between ${formData.furnishing === f ? 'border-[#ff4b9a] bg-pink-50' : 'border-gray-200'}`}><span className="font-bold text-sm">{f}</span>{formData.furnishing === f && <CheckCircle2 size={16} className="text-[#ff4b9a]"/>}</button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                            <h3 className="font-bold text-gray-900 mb-3">Amenities</h3>
+                            <div className="grid grid-cols-3 gap-3">
+                                {[
+                                    {id: 'Wifi', icon: Wifi}, {id: 'Gas', icon: Flame}, {id: 'CCTV', icon: Video},
+                                    {id: 'Lift', icon: ArrowLeft}, {id: 'Generator', icon: Zap}, {id: 'AC', icon: Wind}
+                                ].map(i => (
+                                    <button key={i.id} onClick={() => toggleAmenity(i.id)} className={`p-3 rounded-xl border flex flex-col items-center gap-1 ${formData.amenities.includes(i.id) ? 'bg-[#ff4b9a] text-white border-[#ff4b9a]' : 'bg-gray-50 text-gray-500 border-transparent'}`}>
+                                        <i.icon size={20}/> <span className="text-[10px] font-bold">{i.id}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {step === 3 && (
+                    <div className="space-y-6 animate-in slide-in-from-right">
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2"><DollarSign size={18}/> Monthly Rent</h3>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400">৳</span>
+                                <input type="number" value={formData.monthly_rent} onChange={e => update('monthly_rent', parseInt(e.target.value))} className="w-full pl-8 p-4 bg-gray-50 rounded-xl font-bold text-xl outline-none"/>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <InputGroup label="Service Charge"><input type="number" value={formData.service_charge} onChange={e => update('service_charge', parseInt(e.target.value))} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/></InputGroup>
+                                <InputGroup label="Water Bill"><input type="number" value={formData.water_bill} onChange={e => update('water_bill', parseInt(e.target.value))} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/></InputGroup>
+                            </div>
+                        </div>
+                        <div className="bg-pink-50 p-6 rounded-3xl border border-pink-100 flex justify-between items-center">
+                            <div><h4 className="font-bold">List on Marketplace</h4><p className="text-xs text-gray-500">Post ad immediately</p></div>
+                            <button onClick={() => update('list_on_marketplace', !formData.list_on_marketplace)} className={`w-12 h-7 rounded-full p-1 transition-colors ${formData.list_on_marketplace ? 'bg-[#ff4b9a]' : 'bg-gray-300'}`}><div className={`w-5 h-5 bg-white rounded-full transition-transform ${formData.list_on_marketplace ? 'translate-x-5' : ''}`}/></button>
+                        </div>
+                    </div>
+                )}
+            </div>
+            <div className="p-5 bg-white border-t border-gray-100 safe-bottom flex gap-3">
+                {step > 1 && <button onClick={() => setStep(s => s-1)} className="px-6 py-3 bg-gray-100 font-bold rounded-xl">Back</button>}
+                <button onClick={() => step < 3 ? setStep(s => s+1) : save()} className="flex-1 py-3 bg-[#2d1b4e] text-white font-bold rounded-xl shadow-lg">{step < 3 ? 'Next' : 'Save Flat'}</button>
+            </div>
+        </div>
+    );
+};
+
+// --- VEHICLE CONFIGURATION ---
+const VehicleConfig: React.FC = () => {
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState<Partial<Vehicle>>({
+        name: '', type: 'Car', transmission: 'Auto', fuel_type: 'CNG', seats: 4, rates: { 'Daily': 3000 }, license_plate: '', model_year: '2019', color: ''
+    });
 
     const handleSave = () => {
-        if(formData.flat_no && formData.monthly_rent) {
-            if(editId) DataService.updateFlat(editId, formData);
-            else DataService.addFlat(formData);
-            navigate(-1);
-        } else {
-            alert("Please fill Flat No and Rent.");
+        if(formData.name && formData.license_plate) {
+            DataService.addVehicle({ ...formData, status: 'active', is_listed: true } as Vehicle);
+            navigate('/myspace/inventory');
         }
     };
 
     return (
-        <ConfigLayout title={editId ? `Edit Unit ${formData.flat_no}` : 'Add New Unit'} onSave={handleSave}>
-             <div className="space-y-6">
-                 <SectionHeader title="Unit Details" />
-                 <div className="grid grid-cols-2 gap-4">
-                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">Flat / Unit No <span className="text-red-500">*</span></label>
-                        <input type="text" value={formData.flat_no} onChange={e => updateField('flat_no', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" placeholder="e.g. 4A" />
-                     </div>
-                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">Floor No</label>
-                        <input type="number" value={formData.floor_no} onChange={e => updateField('floor_no', parseInt(e.target.value))} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" />
-                     </div>
-                 </div>
-                 <div className="grid grid-cols-3 gap-3">
-                     {[ {l:'Bedrooms', k:'bedrooms'}, {l:'Baths', k:'washrooms'}, {l:'Balcony', k:'balconies'} ].map(i => (
-                         <div key={i.k}>
-                             <label className="block text-[10px] font-bold text-gray-500 mb-2 uppercase">{i.l}</label>
-                             <input type="number" value={formData[i.k as keyof Flat] as number} onChange={e => updateField(i.k as keyof Flat, parseInt(e.target.value))} className="w-full px-3 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium text-center focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" />
-                         </div>
-                     ))}
-                 </div>
-                 <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-2">Size (Sqft)</label>
-                    <input type="number" value={formData.size_sqft} onChange={e => updateField('size_sqft', parseInt(e.target.value))} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" />
-                 </div>
-                 
-                 <SectionHeader title="Rent & Charges" />
-                 <div className="space-y-4">
-                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">Monthly Rent</label>
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">৳</span>
-                            <input type="number" value={formData.monthly_rent} onChange={e => updateField('monthly_rent', parseInt(e.target.value))} className="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" />
-                        </div>
-                     </div>
-                     <div className="grid grid-cols-2 gap-4">
-                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-2">Service Charge</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">৳</span>
-                                <input type="number" value={formData.service_charge} onChange={e => updateField('service_charge', parseInt(e.target.value))} className="w-full pl-6 px-3 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" />
-                            </div>
-                         </div>
-                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-2">Gas Bill</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">৳</span>
-                                <input type="number" value={formData.gas_bill} onChange={e => updateField('gas_bill', parseInt(e.target.value))} className="w-full pl-6 px-3 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:border-[#ff4b9a] focus:ring-2 focus:ring-[#ff4b9a]/10" />
-                            </div>
-                         </div>
-                     </div>
-                 </div>
-             </div>
-        </ConfigLayout>
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            <Header title="Add Vehicle" showBack />
+            <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                    <InputGroup label="Vehicle Name"><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" placeholder="e.g. Toyota Axio 2018"/></InputGroup>
+                    <div className="flex bg-gray-100 p-1 rounded-xl">
+                        {['Car', 'Bike', 'Bus', 'Truck'].map(t => (
+                            <button key={t} onClick={() => setFormData({...formData, type: t})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${formData.type === t ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}>{t}</button>
+                        ))}
+                    </div>
+                    <InputGroup label="License Plate"><input type="text" value={formData.license_plate} onChange={e => setFormData({...formData, license_plate: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" placeholder="DHAKA-METRO-GA..."/></InputGroup>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                    <h3 className="font-bold text-gray-900">Specs Details</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        <InputGroup label="Model Year"><input type="number" value={formData.model_year} onChange={e => setFormData({...formData, model_year: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/></InputGroup>
+                        <InputGroup label="Color"><input type="text" value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" placeholder="e.g. Pearl White"/></InputGroup>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <InputGroup label="Transmission">
+                            <select value={formData.transmission} onChange={e => setFormData({...formData, transmission: e.target.value as any})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none">
+                                <option>Auto</option><option>Manual</option>
+                            </select>
+                        </InputGroup>
+                        <InputGroup label="Fuel Type">
+                            <select value={formData.fuel_type} onChange={e => setFormData({...formData, fuel_type: e.target.value as any})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none">
+                                <option>CNG</option><option>Petrol</option><option>Diesel</option><option>Hybrid</option>
+                            </select>
+                        </InputGroup>
+                        <InputGroup label="Seats"><input type="number" value={formData.seats} onChange={e => setFormData({...formData, seats: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/></InputGroup>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                    <h3 className="font-bold text-gray-900">Rate (Daily)</h3>
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400">৳</span>
+                        <input type="number" value={formData.rates?.['Daily']} onChange={e => setFormData({...formData, rates: { ...formData.rates, 'Daily': parseInt(e.target.value) }})} className="w-full pl-8 p-4 bg-gray-50 rounded-xl font-bold text-xl outline-none"/>
+                    </div>
+                </div>
+            </div>
+            <div className="p-5 bg-white border-t border-gray-100 safe-bottom">
+                <button onClick={handleSave} className="w-full py-4 bg-[#2d1b4e] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Add Vehicle</button>
+            </div>
+        </div>
     );
 };
 
-// --- Inventory Router Component ---
+// --- GADGET CONFIGURATION ---
+const GadgetConfig: React.FC = () => {
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState<Partial<Gadget>>({
+        name: '', category: 'Camera', brand: '', model: '', rates: { 'Daily': 500 }, security_deposit: 0, serial_no: ''
+    });
+
+    const handleSave = () => {
+        if(formData.name) {
+            DataService.addGadget({ ...formData, status: 'active', is_listed: true } as Gadget);
+            navigate('/myspace/inventory');
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            <Header title="Add Gadget" showBack />
+            <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                    <InputGroup label="Item Name"><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" placeholder="e.g. Sony A7III Kit"/></InputGroup>
+                    <div className="grid grid-cols-3 gap-3">
+                        {[{l:'Camera', i: Camera}, {l:'Console', i: Gamepad}, {l:'Audio', i: Headphones}].map(c => (
+                            <button key={c.l} onClick={() => setFormData({...formData, category: c.l})} className={`p-3 rounded-xl border flex flex-col items-center ${formData.category === c.l ? 'bg-[#ff4b9a] text-white border-[#ff4b9a]' : 'bg-gray-50 border-transparent'}`}>
+                                <c.i size={20}/> <span className="text-[10px] font-bold mt-1">{c.l}</span>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <InputGroup label="Brand"><input type="text" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/></InputGroup>
+                        <InputGroup label="Model"><input type="text" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/></InputGroup>
+                    </div>
+                    <InputGroup label="Serial No (Optional)"><input type="text" value={formData.serial_no} onChange={e => setFormData({...formData, serial_no: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" placeholder="S/N: XXXXX"/></InputGroup>
+                </div>
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <InputGroup label="Daily Rate (৳)">
+                            <input type="number" value={formData.rates?.['Daily']} onChange={e => setFormData({...formData, rates: { ...formData.rates, 'Daily': parseInt(e.target.value) }})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/>
+                        </InputGroup>
+                        <InputGroup label="Security Deposit (৳)">
+                            <input type="number" value={formData.security_deposit} onChange={e => setFormData({...formData, security_deposit: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/>
+                        </InputGroup>
+                    </div>
+                </div>
+            </div>
+            <div className="p-5 bg-white border-t border-gray-100 safe-bottom">
+                <button onClick={handleSave} className="w-full py-4 bg-[#2d1b4e] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Add Gadget</button>
+            </div>
+        </div>
+    );
+};
+
+// --- SERVICE CONFIGURATION ---
+const ServiceConfig: React.FC = () => {
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState<Partial<ServiceAsset>>({
+        name: '', category: 'Photographer', rates: { 'Daily': 2000 }, description: ''
+    });
+
+    const handleSave = () => {
+        if(formData.name) {
+            DataService.addService({ ...formData, status: 'active', is_listed: true } as ServiceAsset);
+            navigate('/myspace/inventory');
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            <Header title="Add Service" showBack />
+            <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                    <InputGroup label="Service Title"><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" placeholder="e.g. Wedding Photography"/></InputGroup>
+                    <InputGroup label="Category">
+                        <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none">
+                            <option>Photographer</option><option>Event Planner</option><option>Shift/Movers</option><option>Technician</option>
+                        </select>
+                    </InputGroup>
+                    <InputGroup label="Description/Bio">
+                        <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" rows={3} placeholder="Describe your experience..."/>
+                    </InputGroup>
+                    <InputGroup label="Starting Rate (৳)">
+                        <input type="number" value={formData.rates?.['Daily']} onChange={e => setFormData({...formData, rates: { ...formData.rates, 'Daily': parseInt(e.target.value) }})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/>
+                    </InputGroup>
+                </div>
+            </div>
+            <div className="p-5 bg-white border-t border-gray-100 safe-bottom">
+                <button onClick={handleSave} className="w-full py-4 bg-[#2d1b4e] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">List Service</button>
+            </div>
+        </div>
+    );
+};
+
+// ... (Inventory Router Component)
 const Inventory: React.FC = () => {
   return (
     <Routes>
       <Route index element={<AssetList />} />
       <Route path="select-type" element={<SelectType />} />
-      <Route path="config-service" element={<ServiceConfig />} />
+      <Route path="manage-flats/:id" element={<ManageFlats />} />
+      <Route path="config-flat" element={<FlatConfig />} />
       <Route path="config-building" element={<BuildingConfig />} />
       <Route path="config-vehicle" element={<VehicleConfig />} />
       <Route path="config-gadget" element={<GadgetConfig />} />
-      <Route path="manage-flats/:id" element={<ManageFlats />} />
-      <Route path="config-flat" element={<FlatConfig />} />
+      <Route path="config-service" element={<ServiceConfig />} />
     </Routes>
   );
 };

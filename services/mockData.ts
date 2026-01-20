@@ -1,5 +1,5 @@
 
-import { Building, Flat, Tenant, Bill, Vehicle, Gadget, ServiceAsset, AssetType, User } from '../types';
+import { Building, Flat, Tenant, Bill, Vehicle, Gadget, ServiceAsset, AssetType, User, MaintenanceRequest, ChatSession, ChatMessage } from '../types';
 
 // Mock User
 let currentUser: User = {
@@ -17,7 +17,8 @@ let currentUser: User = {
     avatar: 'https://i.pravatar.cc/150?u=u1'
 };
 
-// Initial Data
+// ... (Keep existing Initial Data: buildings, vehicles, gadgets, services, flats, tenants, bills, maintenanceRequests as they are)
+// Initial Data (Condensed for brevity, assume previous data exists or is re-initialized here if full file replacement)
 let buildings: Building[] = [
   {
     id: 'b1',
@@ -33,7 +34,7 @@ let buildings: Building[] = [
     created_at: new Date().toISOString(),
     flat_count: 12,
     occupied_count: 1,
-    amenities: ['CCTV', 'Gas', 'Guard'],
+    amenities: ['CCTV', 'Gas', 'Guard', 'Lift', 'Generator'],
     is_listed: true,
     hide_contact: false,
     images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=80&w=800'],
@@ -50,11 +51,12 @@ let vehicles: Vehicle[] = [
     type: 'Car',
     transmission: 'Auto',
     fuel_type: 'CNG',
+    seats: 5,
     rates: {
       'Daily': 3000,
       'Monthly': 45000
     },
-    status: 'active',
+    status: 'rented',
     created_at: new Date().toISOString(),
     is_listed: true,
     images: ['https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800']
@@ -87,7 +89,7 @@ let gadgets: Gadget[] = [
         },
         default_rent_cycle: 'Daily',
         security_deposit: 5000,
-        status: 'active',
+        status: 'rented',
         created_at: new Date().toISOString(),
         is_listed: true,
         images: ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=800']
@@ -128,20 +130,6 @@ let services: ServiceAsset[] = [
     is_listed: true,
     hide_contact: true,
     images: ['https://images.unsplash.com/photo-1554048612-387768052bf7?auto=format&fit=crop&q=80&w=800']
-  },
-  {
-      id: 's3',
-      user_id: 'u1',
-      name: 'Rockstar Band',
-      type: 'Professional',
-      category: 'Band',
-      description: 'Live music for parties and events.',
-      rates: {
-          'Hourly': 8000
-      },
-      status: 'active',
-      created_at: new Date().toISOString(),
-      is_listed: false // Unlisted
   }
 ];
 
@@ -164,7 +152,7 @@ let flats: Flat[] = [
     service_charge: 3000,
     water_bill: 500,
     gas_bill: 800,
-    electricity_bill: 0, // Postpaid usually
+    electricity_bill: 0, 
     additional_charges_amount: 0,
     is_vacant: false,
     created_at: new Date().toISOString(),
@@ -197,6 +185,7 @@ let flats: Flat[] = [
   }
 ];
 
+// ... (Keep other data: tenants, bills, maintenanceRequests, chatSessions, messages)
 let tenants: Tenant[] = [
   {
     id: 't1',
@@ -217,18 +206,33 @@ let tenants: Tenant[] = [
     }
   },
   {
-    id: 't2',
+    id: 't1_v',
     asset_id: 'v1',
     asset_type: 'Vehicle',
-    full_name: 'Uber Driver Karim',
-    phone: '01811223344',
-    profession: 'Driver',
+    full_name: 'Mr. Rafiqul Islam',
+    phone: '01711223344',
+    profession: 'Banker',
     start_date: '2023-10-01',
     status: 'active',
     created_at: new Date().toISOString(),
     asset_info: {
         name: 'Toyota Corolla',
         sub_text: 'DHA-MET-GA-12-3456'
+    }
+  },
+  {
+    id: 't1_g',
+    asset_id: 'g1',
+    asset_type: 'Gadget',
+    full_name: 'Mr. Rafiqul Islam',
+    phone: '01711223344',
+    profession: 'Banker',
+    start_date: '2023-11-15',
+    status: 'active',
+    created_at: new Date().toISOString(),
+    asset_info: {
+        name: 'Sony A7III',
+        sub_text: 'Camera Kit'
     }
   }
 ];
@@ -255,24 +259,139 @@ let bills: Bill[] = [
   },
   {
       id: 'bill_2',
-      tenant_id: 't2',
+      tenant_id: 't1_v',
       asset_type: 'Vehicle',
       month: new Date().toISOString(),
-      rent_amount: 45000, // Monthly rate
+      rent_amount: 45000,
       service_charge: 0,
       water_bill: 0,
       gas_bill: 0,
-      fuel_cost: 0, // Driver pays fuel
+      fuel_cost: 0,
       additional_charges_amount: 0,
       total: 45000,
       status: 'unpaid',
       created_at: new Date().toISOString(),
-      tenant_name: 'Uber Driver Karim',
+      tenant_name: 'Mr. Rafiqul Islam',
       asset_name: 'Toyota Corolla',
       asset_sub: 'Car Rental'
   }
 ];
 
+let maintenanceRequests: MaintenanceRequest[] = [
+    {
+        id: 'm1',
+        tenant_id: 't1',
+        asset_id: 'f1',
+        asset_name: 'Flat 4A',
+        title: 'Leaky Kitchen Faucet',
+        description: 'The tap in the kitchen sink is dripping continuously.',
+        category: 'Plumbing',
+        priority: 'Medium',
+        status: 'Open',
+        created_at: new Date(Date.now() - 86400000).toISOString()
+    },
+    {
+        id: 'm2',
+        tenant_id: 't1',
+        asset_id: 'v1',
+        asset_name: 'Toyota Corolla',
+        title: 'AC not cooling',
+        description: 'Car AC blows hot air after 10 mins.',
+        category: 'Mechanical',
+        priority: 'High',
+        status: 'Resolved',
+        created_at: new Date(Date.now() - 604800000).toISOString()
+    }
+];
+
+let chatSessions: ChatSession[] = [
+    {
+        id: 'c1',
+        type: 'direct',
+        participants: [
+            { id: 'u1', name: 'Umar Faiaz Moon', avatar: 'https://i.pravatar.cc/150?u=u1' },
+            { id: 't1', name: 'Rafiqul Islam', avatar: 'https://i.pravatar.cc/150?u=1' }
+        ],
+        lastMessage: {
+            id: 'm102',
+            chatId: 'c1',
+            senderId: 't1',
+            text: 'I have transferred the rent. Please check.',
+            timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
+            type: 'text',
+            status: 'delivered'
+        },
+        unreadCount: 1,
+        updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString()
+    },
+    {
+        id: 'g1',
+        type: 'group',
+        name: 'Ragib Villa Community',
+        image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=80&w=200',
+        participants: [
+            { id: 'u1', name: 'Umar Faiaz Moon', avatar: 'https://i.pravatar.cc/150?u=u1', role: 'admin' },
+            { id: 't1', name: 'Rafiqul Islam', avatar: 'https://i.pravatar.cc/150?u=1', role: 'member' },
+            { id: 't2', name: 'Sumaiya', avatar: 'https://i.pravatar.cc/150?u=3', role: 'member' }
+        ],
+        lastMessage: {
+            id: 'm201',
+            chatId: 'g1',
+            senderId: 'u1',
+            text: 'Notice: Generator maintenance tomorrow at 10 AM.',
+            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+            type: 'system',
+            status: 'read'
+        },
+        unreadCount: 0,
+        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
+    }
+];
+
+let messages: ChatMessage[] = [
+    {
+        id: 'm100',
+        chatId: 'c1',
+        senderId: 't1',
+        text: 'Hello, is the water pump working fine now?',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+        type: 'text',
+        status: 'read'
+    },
+    {
+        id: 'm101',
+        chatId: 'c1',
+        senderId: 'u1',
+        text: 'Yes, we fixed it yesterday evening.',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1.5).toISOString(),
+        type: 'text',
+        status: 'read'
+    },
+    {
+        id: 'm102',
+        chatId: 'c1',
+        senderId: 't1',
+        text: 'I have transferred the rent. Please check.',
+        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+        type: 'text',
+        status: 'delivered'
+    },
+    {
+        id: 'm201',
+        chatId: 'g1',
+        senderId: 'u1',
+        text: 'Notice: Generator maintenance tomorrow at 10 AM.',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+        type: 'system',
+        status: 'read'
+    }
+];
+
+const getMyRentals = (userId: string = 't1') => {
+    return tenants.filter(t => t.full_name === 'Mr. Rafiqul Islam'); 
+}
+
+// ... (Keep services: UserService, ChatService)
 export const UserService = {
     getCurrentUser: () => currentUser,
     updateUser: (data: Partial<User>) => {
@@ -294,6 +413,119 @@ export const UserService = {
     }
 };
 
+export const ChatService = {
+    getChats: () => chatSessions.sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
+    getChatById: (id: string) => chatSessions.find(c => c.id === id),
+    getMessages: (chatId: string) => messages.filter(m => m.chatId === chatId).sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()),
+    sendMessage: (chatId: string, text: string, senderId: string = 'u1') => {
+        const newMessage: ChatMessage = {
+            id: `m${Date.now()}`,
+            chatId,
+            senderId,
+            text,
+            timestamp: new Date().toISOString(),
+            type: 'text',
+            status: 'sent'
+        };
+        messages.push(newMessage);
+        
+        // Update session
+        const session = chatSessions.find(c => c.id === chatId);
+        if(session) {
+            session.lastMessage = newMessage;
+            session.updatedAt = newMessage.timestamp;
+        }
+        return newMessage;
+    },
+    startChat: (participantId: string, initialMessage: string) => {
+        // Check if chat exists
+        let chat = chatSessions.find(c => c.type === 'direct' && c.participants.some(p => p.id === participantId));
+        if (!chat) {
+            chat = {
+                id: `c${Date.now()}`,
+                type: 'direct',
+                participants: [
+                    { id: 'u1', name: 'Umar Faiaz Moon', avatar: 'https://i.pravatar.cc/150?u=u1' },
+                    // In real app, fetch other user details. Here we mock:
+                    { id: participantId, name: 'Lender/Renter', avatar: `https://i.pravatar.cc/150?u=${participantId}` }
+                ],
+                unreadCount: 0,
+                updatedAt: new Date().toISOString()
+            };
+            chatSessions.unshift(chat);
+        }
+        if (initialMessage) {
+            ChatService.sendMessage(chat.id, initialMessage);
+        }
+        return chat;
+    },
+    createGroup: (name: string, participantIds: string[]) => {
+        const newGroup: ChatSession = {
+            id: `g${Date.now()}`,
+            type: 'group',
+            name,
+            image: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+            participants: [
+                { id: 'u1', name: 'Umar Faiaz Moon', avatar: 'https://i.pravatar.cc/150?u=u1', role: 'admin' },
+                ...participantIds.map(id => {
+                    const contacts = ChatService.getContacts();
+                    const contact = contacts.find(c => c.id === id);
+                    return { 
+                        id, 
+                        name: contact?.name || 'User', 
+                        avatar: contact?.avatar || `https://i.pravatar.cc/150?u=${id}`, 
+                        role: 'member' as const 
+                    };
+                })
+            ],
+            unreadCount: 0,
+            updatedAt: new Date().toISOString(),
+            lastMessage: {
+                id: `m${Date.now()}`,
+                chatId: `g${Date.now()}`,
+                senderId: 'system',
+                text: 'Community created',
+                timestamp: new Date().toISOString(),
+                type: 'system',
+                status: 'read'
+            }
+        };
+        chatSessions.unshift(newGroup);
+        return newGroup;
+    },
+    updateGroup: (groupId: string, data: Partial<ChatSession>) => {
+        const chat = chatSessions.find(c => c.id === groupId);
+        if (chat) {
+            Object.assign(chat, data);
+        }
+        return chat;
+    },
+    addMember: (groupId: string, contactId: string) => {
+        const chat = chatSessions.find(c => c.id === groupId);
+        const contacts = ChatService.getContacts();
+        const contact = contacts.find(c => c.id === contactId);
+        if (chat && contact) {
+             const exists = chat.participants.find(p => p.id === contactId);
+             if (!exists) {
+                chat.participants.push({ 
+                    id: contactId, 
+                    name: contact.name, 
+                    avatar: contact.avatar || `https://i.pravatar.cc/150?u=${contactId}`, 
+                    role: 'member' 
+                });
+                ChatService.sendMessage(groupId, `${contact.name} added to the group`, 'system');
+             }
+        }
+    },
+    getContacts: () => [
+        { id: 't1', name: 'Rafiqul Islam', avatar: 'https://i.pravatar.cc/150?u=1', role: 'Renter' },
+        { id: 't2', name: 'Sumaiya Akter', avatar: 'https://i.pravatar.cc/150?u=3', role: 'Renter' },
+        { id: 't3', name: 'Karim Driver', avatar: 'https://i.pravatar.cc/150?u=2', role: 'Driver' },
+        { id: 's1', name: 'Rahim Tech', avatar: 'https://i.pravatar.cc/150?u=4', role: 'Service' },
+        { id: 'u5', name: 'Building Manager', avatar: 'https://i.pravatar.cc/150?u=5', role: 'Admin' }
+    ]
+};
+
 export const DataService = {
   getStats: () => {
     return {
@@ -309,25 +541,81 @@ export const DataService = {
     };
   },
 
-  // Marketplace Listings
   getMarketplaceItems: () => {
-      // Aggregate all items where is_listed is true
-      const _buildings = buildings.filter(b => b.is_listed).map(b => ({ ...b, category: 'Real Estate', displayPrice: 'Contact for Price' }));
+      // 1. Buildings (as parent assets, might not be rented directly but flats are)
+      const _buildings = buildings.filter(b => b.is_listed).map(b => ({ 
+          ...b, 
+          assetType: 'Residential', 
+          category: 'Real Estate', 
+          displayPrice: 'Contact for Price' 
+      }));
+      
+      // 2. Flats (Main Real Estate Items)
       const _flats = flats.filter(f => f.is_listed).map(f => {
           const b = buildings.find(b => b.id === f.building_id);
-          return { ...f, category: 'Real Estate', name: `Flat ${f.flat_no} at ${b?.name}`, location: `${b?.area}, ${b?.city}`, displayPrice: `৳${f.monthly_rent}/mo` };
+          // Default user_id to u1 if not present for mock
+          const ownerId = b?.user_id || 'u1';
+          return { 
+              ...f, 
+              user_id: ownerId, // Important for "My Listings"
+              assetType: 'Residential',
+              category: 'Real Estate', 
+              name: `Flat ${f.flat_no} at ${b?.name}`, 
+              location: `${b?.area}, ${b?.city}`, 
+              displayPrice: `৳${f.monthly_rent}`,
+              period: '/mo',
+              details: {
+                  bedrooms: f.bedrooms,
+                  washrooms: f.washrooms,
+                  size: f.size_sqft
+              }
+          };
       });
-      const _vehicles = vehicles.filter(v => v.is_listed).map(v => ({ ...v, category: 'Vehicles', displayPrice: `৳${v.rates['Daily'] || v.rates['Monthly']}/day` }));
-      const _gadgets = gadgets.filter(g => g.is_listed).map(g => ({ ...g, category: 'Tech', displayPrice: `৳${g.rates['Daily']}/day` }));
+
+      // 3. Vehicles
+      const _vehicles = vehicles.filter(v => v.is_listed).map(v => ({ 
+          ...v, 
+          assetType: 'Vehicle',
+          category: 'Vehicles', 
+          displayPrice: `৳${v.rates['Daily'] || v.rates['Monthly']}`,
+          period: v.rates['Daily'] ? '/day' : '/mo',
+          details: {
+              transmission: v.transmission,
+              fuel: v.fuel_type,
+              seats: v.seats
+          }
+      }));
+
+      // 4. Gadgets
+      const _gadgets = gadgets.filter(g => g.is_listed).map(g => ({ 
+          ...g, 
+          assetType: 'Gadget',
+          category: 'Tech', 
+          displayPrice: `৳${g.rates['Daily']}`,
+          period: '/day',
+          details: {
+              brand: g.brand,
+              model: g.model
+          }
+      }));
+
+      // 5. Services
       const _services = services.filter(s => s.is_listed).map(s => {
           let cat = 'Services';
           if(s.type === 'Event Space') cat = 'Events';
-          return { ...s, category: cat, displayPrice: `৳${Object.values(s.rates)[0] || 0}` };
+          return { 
+              ...s, 
+              assetType: 'Service',
+              category: cat, 
+              displayPrice: `৳${Object.values(s.rates)[0] || 0}`,
+              period: '/day'
+          };
       });
+
       return [..._buildings, ..._flats, ..._vehicles, ..._gadgets, ..._services];
   },
 
-  // Generic List Toggler
+  // ... (Keep existing methods: toggleListing, getBuildings, addBuilding, updateBuilding, etc.)
   toggleListing: (id: string, type: AssetType | 'Flat', isListed: boolean, hideContact: boolean = false) => {
       if (type === 'Residential' || type === 'Commercial' || type === 'Shared') {
           const b = buildings.find(x => x.id === id); if(b) { b.is_listed = isListed; b.hide_contact = hideContact; }
@@ -342,11 +630,11 @@ export const DataService = {
       }
   },
 
-  // Buildings
   getBuildings: () => buildings,
   getBuildingById: (id: string) => buildings.find(b => b.id === id),
   addBuilding: (b: Building) => {
-      const newB = { ...b, id: `b${Date.now()}`, created_at: new Date().toISOString() };
+      // Ensure user_id is set
+      const newB = { ...b, user_id: currentUser.id, id: `b${Date.now()}`, created_at: new Date().toISOString() };
       buildings.push(newB);
       return newB;
   },
@@ -354,7 +642,6 @@ export const DataService = {
       buildings = buildings.map(b => b.id === id ? { ...b, ...data } : b);
   },
 
-  // Flats
   getFlats: (buildingId?: string) => buildingId ? flats.filter(f => f.building_id === buildingId) : flats,
   getFlatById: (id: string) => flats.find(f => f.id === id),
   addFlat: (f: Partial<Flat>) => flats.push({ ...f, id: `f${Date.now()}`, is_vacant: true, created_at: new Date().toISOString() } as Flat),
@@ -362,32 +649,29 @@ export const DataService = {
       flats = flats.map(f => f.id === id ? { ...f, ...data } : f);
   },
 
-  // Vehicles
   getVehicles: () => vehicles,
   getVehicleById: (id: string) => vehicles.find(v => v.id === id),
-  addVehicle: (v: Vehicle) => vehicles.push({ ...v, id: `v${Date.now()}`, created_at: new Date().toISOString() }),
+  addVehicle: (v: Vehicle) => vehicles.push({ ...v, user_id: currentUser.id, id: `v${Date.now()}`, created_at: new Date().toISOString() }),
   updateVehicle: (id: string, data: Partial<Vehicle>) => {
       vehicles = vehicles.map(v => v.id === id ? { ...v, ...data } : v);
   },
 
-  // Gadgets
   getGadgets: () => gadgets,
   getGadgetById: (id: string) => gadgets.find(g => g.id === id),
-  addGadget: (g: Gadget) => gadgets.push({ ...g, id: `g${Date.now()}`, created_at: new Date().toISOString() }),
+  addGadget: (g: Gadget) => gadgets.push({ ...g, user_id: currentUser.id, id: `g${Date.now()}`, created_at: new Date().toISOString() }),
   updateGadget: (id: string, data: Partial<Gadget>) => {
       gadgets = gadgets.map(g => g.id === id ? { ...g, ...data } : g);
   },
 
-  // Services / Professionals
   getServices: () => services,
   getServiceById: (id: string) => services.find(s => s.id === id),
-  addService: (s: ServiceAsset) => services.push({ ...s, id: `s${Date.now()}`, created_at: new Date().toISOString() }),
+  addService: (s: ServiceAsset) => services.push({ ...s, user_id: currentUser.id, id: `s${Date.now()}`, created_at: new Date().toISOString() }),
   updateService: (id: string, data: Partial<ServiceAsset>) => {
       services = services.map(s => s.id === id ? { ...s, ...data } : s);
   },
 
-  // Tenants
   getTenants: () => tenants,
+  getMyRentals: getMyRentals,
   assignTenant: (assetId: string, tenantData: Partial<Tenant>) => {
       const newTenant: Tenant = {
           ...tenantData,
@@ -444,7 +728,6 @@ export const DataService = {
 
       tenants.unshift(newTenant);
 
-      // Generate initial bill
       const newBill: Bill = {
           id: `bill_${Date.now()}`,
           tenant_id: newTenant.id,
@@ -464,7 +747,6 @@ export const DataService = {
           asset_sub: assetSub
       };
       
-      // Add Residential specific charges
       if(tenantData.asset_type === 'Residential') {
           const flat = flats.find(f => f.id === assetId);
           if(flat) {
@@ -498,13 +780,11 @@ export const DataService = {
       }
   },
 
-  // Bills
   getBills: () => bills,
   updateBill: (id: string, data: Partial<Bill>) => {
       bills = bills.map(b => {
           if (b.id === id) {
               const updated = { ...b, ...data };
-              // Recalculate total if charges changed
               if (data.electricity_bill !== undefined || data.additional_charges_amount !== undefined || data.fuel_cost !== undefined || data.toll_cost !== undefined) {
                   const base = updated.rent_amount + updated.service_charge + updated.water_bill + updated.gas_bill;
                   const extras = (updated.electricity_bill || 0) + (updated.other_bills || 0) + (updated.additional_charges_amount || 0);
@@ -515,5 +795,15 @@ export const DataService = {
           }
           return b;
       });
+  },
+
+  getMaintenanceRequests: (tenantId: string) => maintenanceRequests.filter(m => m.tenant_id === tenantId),
+  addMaintenanceRequest: (req: Partial<MaintenanceRequest>) => {
+      maintenanceRequests.unshift({
+          ...req,
+          id: `m${Date.now()}`,
+          created_at: new Date().toISOString(),
+          status: 'Open'
+      } as MaintenanceRequest);
   }
 };

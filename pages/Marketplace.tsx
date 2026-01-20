@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ShoppingBag, MapPin, Star, Building2, Car, Camera, Briefcase, Calendar, ChevronLeft, Share2, Heart, Phone, Mail, CheckCircle2, Clock, Plus, ArrowRight, User, X, BedDouble, Bath, Ruler, Fuel, Settings2, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Search, Filter, ShoppingBag, MapPin, Star, Building2, Car, Camera, Briefcase, Calendar, ChevronLeft, ChevronRight, Share2, Heart, Phone, Mail, CheckCircle2, Clock, Plus, ArrowRight, User, X, BedDouble, Bath, Ruler, Fuel, Settings2, ShieldCheck, Eye, EyeOff, LayoutGrid, Zap, Image as ImageIcon, MessageCircle, Edit3, Trash2 } from 'lucide-react';
 import { Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { DataService } from '../services/mockData';
+import { DataService, ChatService, UserService } from '../services/mockData';
 import { AssetType, RentCycle } from '../types';
 import { Logo } from '../components/Logo';
 
@@ -14,44 +14,107 @@ const Marketplace: React.FC = () => {
   return (
     <Routes>
       <Route index element={<MarketplaceGrid />} />
+      <Route path="manage" element={<MyListings />} />
       <Route path="item/:id" element={<ItemDetails />} />
       <Route path="post" element={<PostAd />} />
     </Routes>
   );
 };
 
-// --- 1. MARKETPLACE GRID VIEW ---
+// --- ASSET CARD ---
+const AssetCard: React.FC<{ item: any, onClick: () => void, isOwner?: boolean, onEdit?: () => void, onUnlist?: () => void }> = ({ item, onClick, isOwner, onEdit, onUnlist }) => {
+    const isFlat = item.assetType === 'Residential';
+    const isVehicle = item.assetType === 'Vehicle';
+    const isGadget = item.assetType === 'Gadget';
+
+    return (
+        <div 
+            onClick={onClick}
+            className="group bg-white rounded-[1.5rem] border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] transition-all duration-300 overflow-hidden cursor-pointer active:scale-[0.98] flex flex-col h-full hover:-translate-y-1 relative"
+        >
+            <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+                <img 
+                    src={item.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800'} 
+                    alt={item.name}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute top-3 left-3 flex gap-2">
+                    <span className="px-3 py-1 bg-white/95 backdrop-blur-md rounded-full text-[10px] font-extrabold text-gray-900 uppercase tracking-wide shadow-sm flex items-center gap-1">
+                        {item.category}
+                    </span>
+                </div>
+                {isOwner && (
+                    <div className="absolute top-3 right-3 flex gap-2">
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onEdit && onEdit(); }} 
+                            className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-gray-700 hover:bg-white hover:text-blue-600 shadow-sm"
+                        >
+                            <Edit3 size={14} />
+                        </button>
+                    </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent pt-10">
+                    <div className="flex items-center gap-1 text-[11px] text-white font-medium">
+                        <MapPin size={12} className="text-[#ff4b9a]"/> {item.city || item.location || 'Dhaka'}
+                    </div>
+                </div>
+            </div>
+            <div className="p-4 flex flex-col flex-1 justify-between">
+                <div>
+                    <h3 className="text-base font-bold text-gray-900 leading-snug line-clamp-1 mb-1 group-hover:text-[#ff4b9a] transition-colors">{item.name}</h3>
+                    <div className="flex items-center gap-3 mt-2 text-gray-500 text-xs font-medium">
+                        {isFlat && item.details && (
+                            <>
+                                <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md"><BedDouble size={12}/> {item.details.bedrooms} Bed</span>
+                                <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md"><Ruler size={12}/> {item.details.size} sqft</span>
+                            </>
+                        )}
+                        {isVehicle && item.details && (
+                            <>
+                                <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md"><Fuel size={12}/> {item.details.fuel}</span>
+                                <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md"><Settings2 size={12}/> {item.details.transmission}</span>
+                            </>
+                        )}
+                        {isGadget && item.details && (
+                            <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">{item.details.brand} {item.details.model}</span>
+                        )}
+                    </div>
+                </div>
+                <div className="flex justify-between items-end pt-4 border-t border-gray-50 mt-3">
+                    <div>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Rent</span>
+                        <div className="flex items-baseline gap-1">
+                            <p className="text-lg font-black text-gray-900">{item.displayPrice}</p>
+                            <span className="text-[10px] font-bold text-gray-400">{item.period || ''}</span>
+                        </div>
+                    </div>
+                    {isOwner && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onUnlist && onUnlist(); }}
+                            className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded hover:bg-red-100"
+                        >
+                            Unlist
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- MARKETPLACE GRID ---
 const MarketplaceGrid: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Initialize state based on navigation params (from Home shortcuts)
-  const initialCategory = location.state?.category || 'All';
-  const initialSearch = location.state?.search || '';
-
   const [activeTab, setActiveTab] = useState<'All' | 'Real Estate' | 'Vehicles' | 'Tech' | 'Events' | 'Services'>('All');
   const [search, setSearch] = useState('');
   const [items, setItems] = useState<any[]>([]);
 
   useEffect(() => {
     setItems(DataService.getMarketplaceItems());
-    if (initialCategory) {
-        if(initialCategory === 'Tech') setActiveTab('Tech');
-        else if(initialCategory === 'Vehicles') setActiveTab('Vehicles');
-        else if(initialCategory === 'Real Estate') setActiveTab('Real Estate');
-        else if(initialCategory === 'Services') setActiveTab('Services');
-        else setActiveTab('All');
-    }
-    if (initialSearch) setSearch(initialSearch);
-  }, [initialCategory, initialSearch]);
-
-  const handlePostAd = () => {
-      if (isAuth()) {
-          navigate('post');
-      } else {
-          navigate('/login');
-      }
-  };
+    if (location.state?.category) setActiveTab(location.state.category);
+    if (location.state?.search) setSearch(location.state.search);
+  }, [location.state]);
 
   const filteredItems = items.filter(item => {
     const matchesTab = activeTab === 'All' || item.category === activeTab || (activeTab === 'Real Estate' && item.type === 'Residential');
@@ -59,440 +122,285 @@ const MarketplaceGrid: React.FC = () => {
     return matchesTab && matchesSearch;
   });
 
-  const categories = [
-      { id: 'All', icon: null },
-      { id: 'Real Estate', icon: Building2 },
-      { id: 'Vehicles', icon: Car },
-      { id: 'Tech', icon: Camera },
-      { id: 'Events', icon: Calendar },
-      { id: 'Services', icon: Briefcase }
-  ];
+  const handlePostAd = () => isAuth() ? navigate('post') : navigate('/login');
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28">
-        {/* Sticky Header */}
-        <div className="bg-white sticky top-0 z-30 pt-4 pb-2 px-4 shadow-sm border-b border-gray-100">
-            <div className="flex justify-between items-center mb-4">
-                <Logo size="sm" />
-                <button 
-                    onClick={handlePostAd}
-                    className="flex items-center gap-1.5 bg-[#2d1b4e] text-white px-4 py-2 rounded-full shadow-lg active:scale-95 transition-transform"
-                >
-                    <Plus size={16} />
-                    <span className="text-xs font-bold uppercase tracking-wide">Post Ad</span>
-                </button>
-            </div>
-
-            {/* Search */}
-            <div className="relative mb-4">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input 
-                    type="text" 
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search apartments, cars..." 
-                    className="w-full pl-11 pr-4 py-3 bg-gray-100 border-none rounded-2xl text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ff4b9a]/20 transition-all placeholder:text-gray-400"
-                />
-            </div>
-
-            {/* Categories */}
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
-                {categories.map(cat => (
-                    <button 
-                        key={cat.id}
-                        onClick={() => setActiveTab(cat.id as any)}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded-full whitespace-nowrap text-xs font-bold transition-all border ${activeTab === cat.id ? 'bg-[#ff4b9a] border-[#ff4b9a] text-white shadow-md shadow-pink-200' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                    >
-                        {cat.icon && <cat.icon size={14} />}
-                        {cat.id}
-                    </button>
-                ))}
-            </div>
-        </div>
-
-        {/* Items Grid - 2 Columns on Mobile */}
-        <div className="p-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-            {filteredItems.map((item, i) => (
-                <div 
-                    key={i} 
-                    onClick={() => navigate(`item/${item.id}`)}
-                    className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer active:scale-[0.98] flex flex-col h-full"
-                >
-                    {/* Image Area */}
-                    <div className="relative aspect-[4/3] bg-gray-200 overflow-hidden">
-                        <img 
-                            src={item.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800'} 
-                            alt={item.name}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60"></div>
-                        
-                        {/* Category Badge */}
-                        <div className="absolute top-2 left-2">
-                            <span className="px-2 py-1 bg-white/95 backdrop-blur-md rounded-lg text-[9px] font-extrabold text-gray-900 uppercase tracking-wide shadow-sm">{item.category}</span>
+        <div className="bg-white/95 backdrop-blur-md sticky top-0 z-30 shadow-sm border-b border-gray-200 transition-all duration-300">
+            <div className="max-w-7xl mx-auto w-full px-5 md:px-8 py-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center justify-between w-full md:w-auto">
+                         <div className="flex items-center gap-3">
+                            <div className="md:hidden"><Logo size="sm" /></div>
+                            <h2 className="text-xl font-bold text-gray-900">Marketplace</h2>
                         </div>
-                        
-                        <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end">
-                            <div className="flex items-center gap-1 text-[10px] text-white font-medium bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full">
-                                <MapPin size={10} className="text-white"/> {item.city || item.location || 'Dhaka'}
-                            </div>
+                        <div className="flex gap-2 md:hidden">
+                            <button onClick={() => navigate('manage')} className="bg-gray-100 p-2 rounded-full"><User size={20}/></button>
+                            <button onClick={handlePostAd} className="flex items-center gap-2 bg-[#2d1b4e] text-white px-4 py-2 rounded-full shadow-lg active:scale-95 transition-all"><Plus size={16} /><span className="text-xs font-bold uppercase tracking-wide">Post</span></button>
                         </div>
                     </div>
-
-                    {/* Content Area */}
-                    <div className="p-3 flex flex-col flex-1 justify-between gap-2">
-                        <div>
-                            <h3 className="text-sm font-bold text-gray-900 leading-tight line-clamp-2 mb-1">{item.name}</h3>
-                            <p className="text-[10px] text-gray-500 line-clamp-1">{item.sub || item.description || 'Verified listing'}</p>
-                        </div>
-                        <div className="flex justify-between items-center pt-2 border-t border-gray-50">
-                            <p className="text-sm font-extrabold text-[#ff4b9a]">{item.displayPrice}</p>
-                            <div className="flex items-center gap-1 text-[10px] font-bold text-gray-500">
-                                <Star size={10} fill="#f59e0b" className="text-amber-500"/> 4.9
-                            </div>
-                        </div>
+                    <div className="relative w-full md:max-w-md">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="w-full pl-11 pr-4 py-3 bg-gray-100 border-transparent rounded-2xl text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ff4b9a]/20 focus:bg-white focus:border-gray-200 transition-all placeholder:text-gray-400"/>
+                    </div>
+                    <div className="hidden md:flex gap-3">
+                        <button onClick={() => navigate('manage')} className="px-5 py-2.5 rounded-full border border-gray-200 font-bold text-sm hover:bg-gray-50 text-gray-700">My Listings</button>
+                        <button onClick={handlePostAd} className="flex items-center gap-2 bg-[#2d1b4e] text-white px-5 py-2.5 rounded-full shadow-lg active:scale-95 transition-all hover:bg-[#3d2566] hover:shadow-xl"><Plus size={18} /><span className="text-xs font-bold uppercase tracking-wide">Post Ad</span></button>
                     </div>
                 </div>
-            ))}
-        </div>
-
-        {filteredItems.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                <ShoppingBag size={48} className="mb-4 opacity-20"/>
-                <p className="font-bold text-sm">No items found.</p>
-                <p className="text-xs">Try adjusting your filters.</p>
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                    {[
+                        { id: 'All', icon: null }, { id: 'Real Estate', icon: Building2 }, { id: 'Vehicles', icon: Car },
+                        { id: 'Tech', icon: Camera }, { id: 'Events', icon: Calendar }, { id: 'Services', icon: Briefcase }
+                    ].map(cat => (
+                        <button key={cat.id} onClick={() => setActiveTab(cat.id as any)} className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all border ${activeTab === cat.id ? 'bg-[#ff4b9a] border-[#ff4b9a] text-white shadow-md shadow-pink-200' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'}`}>
+                            {cat.icon && <cat.icon size={14} />}{cat.id}
+                        </button>
+                    ))}
+                </div>
             </div>
-        )}
+        </div>
+        <div className="max-w-7xl mx-auto p-5 md:p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {filteredItems.map((item, i) => <AssetCard key={i} item={item} onClick={() => navigate(`item/${item.id}`)} />)}
+        </div>
     </div>
   );
 };
 
-// ... (Rest of Marketplace.tsx components remain largely the same, but simpler layout for ItemDetails and PostAd is implied via general styling improvements)
-// ... keeping existing ItemDetails and PostAd code but wrapped in the cleaner file structure
-// --- 2. ITEM DETAILS VIEW ---
-const ItemDetails: React.FC = () => {
-    const { id } = useParams();
+// --- MY LISTINGS ---
+const MyListings: React.FC = () => {
     const navigate = useNavigate();
-    const [item, setItem] = useState<any>(null);
-    const [showContact, setShowContact] = useState(false);
-    const [selectedService, setSelectedService] = useState(null);
+    const currentUser = UserService.getCurrentUser();
+    const [myItems, setMyItems] = useState(DataService.getMarketplaceItems().filter(i => i.user_id === currentUser.id));
 
-    useEffect(() => {
-        const found = DataService.getMarketplaceItems().find(i => i.id === id);
-        setItem(found);
-    }, [id]);
-
-    if (!item) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-
-    const handleAction = () => {
-        if (!isAuth()) {
-            navigate('/login');
-        } else {
-            setShowContact(true);
+    const handleUnlist = (id: string, type: AssetType | 'Flat') => {
+        if(confirm("Are you sure you want to unlist this item?")) {
+            DataService.toggleListing(id, type, false);
+            setMyItems(prev => prev.filter(i => i.id !== id));
         }
     };
 
-    const isService = item.type === 'Professional' || item.type === 'Service' || item.type === 'Event Space';
-    const isResidential = item.type === 'Residential' || item.type === 'Flat';
-    const isVehicle = item.type === 'Vehicle';
-    const isGadget = item.type === 'Gadget';
+    const handleEdit = (item: any) => {
+        // Map to inventory config route based on type
+        if(item.assetType === 'Residential' && item.flat_no) {
+            navigate('/myspace/inventory/config-flat', { state: { editId: item.id, buildingId: item.building_id } });
+        } else if (item.assetType === 'Vehicle') {
+            navigate('/myspace/inventory/config-vehicle', { state: { editId: item.id } }); // Note: Need to implement edit loading in Inventory for Vehicle
+        } else {
+            alert("Edit for this type coming soon. Use Inventory to manage.");
+            navigate('/myspace/inventory');
+        }
+    };
 
     return (
-        <div className="min-h-screen bg-white pb-32 animate-in slide-in-from-right duration-300 relative z-[60]">
-            {/* Hero Image */}
-            <div className="relative h-72 sm:h-96 bg-gray-200">
-                <img src={item.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800'} className="w-full h-full object-cover" />
-                <div className="absolute top-0 left-0 right-0 p-5 pt-10 flex justify-between items-center bg-gradient-to-b from-black/50 to-transparent">
-                    <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-black transition-all">
-                        <ChevronLeft size={24} />
-                    </button>
-                    <div className="flex gap-3">
-                        <button className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"><Share2 size={20} /></button>
-                        <button className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-red-500 transition-all"><Heart size={20} /></button>
-                    </div>
-                </div>
+        <div className="min-h-screen bg-gray-50">
+            <div className="bg-white p-5 border-b border-gray-100 sticky top-0 z-40 flex items-center gap-3">
+                <button onClick={() => navigate('/marketplace')} className="p-2 rounded-full hover:bg-gray-100"><ChevronLeft size={24}/></button>
+                <h2 className="font-bold text-lg">My Listings</h2>
             </div>
-
-            {/* Content Container */}
-            <div className="-mt-6 rounded-t-3xl bg-white relative z-10 p-6 space-y-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] min-h-[60vh]">
-                
-                {/* Title & Rating */}
-                <div>
-                    <div className="flex justify-between items-start mb-2">
-                        <h1 className="text-2xl font-bold text-gray-900 leading-tight">{item.name}</h1>
-                        <div className="flex flex-col items-end">
-                            <span className="text-2xl font-extrabold text-[#ff4b9a]">{item.displayPrice}</span>
-                            <span className="text-[10px] text-gray-400 font-bold uppercase">Per Unit</span>
-                        </div>
+            
+            <div className="max-w-7xl mx-auto p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {myItems.map(item => (
+                    <AssetCard 
+                        key={item.id} 
+                        item={item} 
+                        onClick={() => navigate(`/marketplace/item/${item.id}`)}
+                        isOwner={true}
+                        onEdit={() => handleEdit(item)}
+                        onUnlist={() => handleUnlist(item.id, (item.assetType === 'Residential' ? 'Flat' : item.assetType) as AssetType | 'Flat')}
+                    />
+                ))}
+                {myItems.length === 0 && (
+                    <div className="col-span-full text-center py-20">
+                        <ShoppingBag size={48} className="mx-auto text-gray-300 mb-4"/>
+                        <p className="text-gray-500 font-medium">You haven't listed anything yet.</p>
+                        <button onClick={() => navigate('/marketplace/post')} className="mt-4 text-[#ff4b9a] font-bold">Post an Ad</button>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span className="flex items-center gap-1 text-amber-500 font-bold"><Star size={14} fill="currentColor"/> 4.9 (82)</span>
-                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                        <span className="flex items-center gap-1"><MapPin size={14} /> {item.city || item.location}</span>
-                    </div>
-                </div>
-
-                <hr className="border-gray-100" />
-
-                {/* Specific Details Cards */}
-                <div className="grid grid-cols-2 gap-3">
-                    {isResidential && (
-                        <>
-                            <div className="bg-gray-50 p-3 rounded-2xl flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-sm"><BedDouble size={16}/></div>
-                                <div><p className="text-[10px] text-gray-400 font-bold uppercase">Bedrooms</p><p className="font-bold text-gray-900">{item.bedrooms || 3} Beds</p></div>
-                            </div>
-                            <div className="bg-gray-50 p-3 rounded-2xl flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-sm"><Bath size={16}/></div>
-                                <div><p className="text-[10px] text-gray-400 font-bold uppercase">Bathrooms</p><p className="font-bold text-gray-900">{item.washrooms || 2} Baths</p></div>
-                            </div>
-                            <div className="bg-gray-50 p-3 rounded-2xl flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-sm"><Ruler size={16}/></div>
-                                <div><p className="text-[10px] text-gray-400 font-bold uppercase">Size</p><p className="font-bold text-gray-900">{item.size_sqft || 1200} sqft</p></div>
-                            </div>
-                            <div className="bg-gray-50 p-3 rounded-2xl flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-sm"><Building2 size={16}/></div>
-                                <div><p className="text-[10px] text-gray-400 font-bold uppercase">Level</p><p className="font-bold text-gray-900">Floor {item.floor_no || 2}</p></div>
-                            </div>
-                        </>
-                    )}
-                    {isVehicle && (
-                        <>
-                            <div className="bg-gray-50 p-3 rounded-2xl flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-sm"><Car size={16}/></div>
-                                <div><p className="text-[10px] text-gray-400 font-bold uppercase">Type</p><p className="font-bold text-gray-900">{item.type}</p></div>
-                            </div>
-                            <div className="bg-gray-50 p-3 rounded-2xl flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-sm"><Settings2 size={16}/></div>
-                                <div><p className="text-[10px] text-gray-400 font-bold uppercase">Gear</p><p className="font-bold text-gray-900">{item.transmission || 'Auto'}</p></div>
-                            </div>
-                            <div className="bg-gray-50 p-3 rounded-2xl flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-sm"><Fuel size={16}/></div>
-                                <div><p className="text-[10px] text-gray-400 font-bold uppercase">Fuel</p><p className="font-bold text-gray-900">{item.fuel_type || 'Octane'}</p></div>
-                            </div>
-                        </>
-                    )}
-                    {isGadget && (
-                        <>
-                            <div className="bg-gray-50 p-3 rounded-2xl flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-sm"><Camera size={16}/></div>
-                                <div><p className="text-[10px] text-gray-400 font-bold uppercase">Brand</p><p className="font-bold text-gray-900">{item.brand || 'Generic'}</p></div>
-                            </div>
-                            <div className="bg-gray-50 p-3 rounded-2xl flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-sm"><Settings2 size={16}/></div>
-                                <div><p className="text-[10px] text-gray-400 font-bold uppercase">Model</p><p className="font-bold text-gray-900">{item.model || 'N/A'}</p></div>
-                            </div>
-                        </>
-                    )}
-                </div>
-
-                {/* Host / Owner Info with Privacy Logic */}
-                <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-full bg-gray-100 border border-gray-200 overflow-hidden">
-                                {item.hide_contact ? <div className="w-full h-full bg-purple-100 flex items-center justify-center text-lg">🔒</div> : <img src="https://i.pravatar.cc/150?u=host" className="w-full h-full object-cover"/>}
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-gray-400 uppercase">Hosted by</p>
-                                <h4 className="font-bold text-gray-900 flex items-center gap-1">
-                                    {item.hide_contact ? "Verified User" : "Bhara Official"}
-                                    <ShieldCheck size={14} className="text-green-500"/>
-                                </h4>
-                            </div>
-                        </div>
-                        <button className="text-xs font-bold text-[#ff4b9a] border border-[#ff4b9a] px-3 py-1.5 rounded-full hover:bg-pink-50">
-                            {item.hide_contact ? "Message" : "View Profile"}
-                        </button>
-                    </div>
-                    {item.hide_contact && <p className="text-[10px] text-gray-400 mt-2 bg-gray-50 p-2 rounded-lg text-center">Owner has hidden direct contact details. Please use the app to communicate.</p>}
-                </div>
-
-                {/* Service Selection (If Service) */}
-                {isService && (
-                    <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                        <h3 className="text-sm font-bold text-gray-900 mb-3">Select Package</h3>
-                        <div className="space-y-2">
-                            {['Basic (4 Hours)', 'Standard (8 Hours)', 'Premium (Full Day)'].map((pkg, i) => (
-                                <div key={i} onClick={() => setSelectedService(i as any)} className={`p-3 rounded-xl border flex justify-between items-center cursor-pointer transition-all ${selectedService === i ? 'bg-white border-[#ff4b9a] shadow-sm' : 'bg-transparent border-transparent hover:bg-white hover:border-gray-200'}`}>
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedService === i ? 'border-[#ff4b9a]' : 'border-gray-400'}`}>
-                                            {selectedService === i && <div className="w-2 h-2 bg-[#ff4b9a] rounded-full"></div>}
-                                        </div>
-                                        <span className={`text-sm font-bold ${selectedService === i ? 'text-gray-900' : 'text-gray-500'}`}>{pkg}</span>
-                                    </div>
-                                    <span className="text-xs font-bold text-gray-900">৳{(i+1)*2000}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Description */}
-                <div>
-                    <h3 className="text-sm font-bold text-gray-900 mb-2">Description</h3>
-                    <p className="text-sm text-gray-500 leading-relaxed">
-                        {item.listing_description || item.description || "Experience top-quality service with our premium offering. Verified by Bhara.online for safety and quality assurance. Ideal for those seeking reliability and excellence."}
-                    </p>
-                </div>
-
-                {/* Location Map Placeholder */}
-                <div className="h-40 bg-gray-100 rounded-2xl flex items-center justify-center text-gray-400 text-xs font-bold border border-gray-200">
-                    <MapPin size={20} className="mb-1 mr-1"/> Location Map View
-                </div>
-            </div>
-
-            {/* Sticky Action Footer - High Z-Index to overlap main Nav */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center gap-4 z-[70] max-w-md mx-auto">
-                {showContact ? (
-                    <div className="flex-1 flex gap-3 animate-in slide-in-from-bottom">
-                        {!item.hide_contact && (
-                            <button onClick={() => window.open('tel:123456')} className="flex-1 bg-green-500 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-200">
-                                <Phone size={18}/> Call
-                            </button>
-                        )}
-                        <button className="flex-1 bg-blue-500 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
-                            <Mail size={18}/> Chat
-                        </button>
-                    </div>
-                ) : (
-                    <>
-                        <div className="flex flex-col">
-                            <span className="text-lg font-extrabold text-gray-900">{item.displayPrice}</span>
-                            <span className="text-[10px] font-bold text-green-600 underline">See price breakdown</span>
-                        </div>
-                        <button 
-                            onClick={handleAction}
-                            className="flex-1 bg-[#2d1b4e] text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all"
-                        >
-                            {item.hide_contact ? 'Request Info' : 'Contact Host'}
-                        </button>
-                    </>
                 )}
             </div>
         </div>
     );
 };
 
-// --- 3. POST AD / SELL MODULE ---
-const PostAd: React.FC = () => {
+// --- ITEM DETAILS ---
+const ItemDetails: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    
-    // Redirect check
-    useEffect(() => {
-        if(!isAuth()) navigate('/login');
-    }, []);
+    // Simplified fetch logic for demo - iterates all arrays
+    const item = DataService.getMarketplaceItems().find(i => i.id === id) as any;
+    const currentUser = UserService.getCurrentUser();
 
-    const [mode, setMode] = useState<'existing' | 'new'>('existing');
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [unlistedItems, setUnlistedItems] = useState<any[]>([]);
-    const [hideContact, setHideContact] = useState(false);
-    
-    useEffect(() => {
-        const b = DataService.getBuildings().filter(x => !x.is_listed && x.type !== 'Residential').map(x => ({...x, type: x.type, label: x.name, sub: `Entire ${x.type} Property`})); 
-        const f = DataService.getFlats().filter(x => !x.is_listed).map(x => {
-             const parent = DataService.getBuildingById(x.building_id);
-             return {...x, type: 'Flat', label: `Flat ${x.flat_no}`, sub: parent ? `${parent.name}, ${parent.area}` : 'Residential Unit'};
-        });
-        const v = DataService.getVehicles().filter(x => !x.is_listed).map(x => ({...x, type: 'Vehicle', label: x.name, sub: x.license_plate}));
-        const g = DataService.getGadgets().filter(x => !x.is_listed).map(x => ({...x, type: 'Gadget', label: x.name, sub: x.model}));
-        const s = DataService.getServices().filter(x => !x.is_listed).map(x => ({...x, type: 'Service', label: x.name, sub: x.category}));
-        
-        setUnlistedItems([...f, ...v, ...g, ...s, ...b]);
-    }, []);
+    if (!item) return <div>Item not found</div>;
 
-    const handlePublish = () => {
-        if (!selectedId) return;
-        const item = unlistedItems.find(i => i.id === selectedId);
-        if (item) {
-            DataService.toggleListing(selectedId, item.type, true, hideContact);
-            alert("Successfully Posted to Marketplace!");
-            navigate('/marketplace');
+    const isFlat = item.assetType === 'Residential';
+    const isOwner = item.user_id === currentUser.id;
+
+    const handleRequest = () => {
+        if (!isAuth()) {
+            navigate('/login');
+            return;
         }
-    };
-
-    const handleCreateNew = (type: string) => {
-        // Redirect to inventory config
-        if(type === 'Residential') navigate('/myspace/inventory/config-flat'); 
-        else if(type === 'Vehicle') navigate('/myspace/inventory/config-vehicle');
-        else if(type === 'Gadget') navigate('/myspace/inventory/config-gadget');
-        else navigate('/myspace/inventory/config-service');
+        // Start a chat
+        ChatService.startChat(item.user_id, `Hi, I am interested in your ${item.name}. Is it available?`);
+        navigate('/inbox');
     };
 
     return (
-        <div className="min-h-screen bg-white animate-in slide-in-from-bottom duration-300 relative z-[60]">
-            <div className="p-5 border-b border-gray-100 flex items-center gap-3 sticky top-0 bg-white z-20">
-                <button onClick={() => navigate('/marketplace')} className="p-2 -ml-2 hover:bg-gray-100 rounded-full"><X size={24}/></button>
-                <h2 className="text-xl font-bold text-gray-900">Post Ad</h2>
+        <div className="min-h-screen bg-white pb-32 animate-in slide-in-from-bottom duration-300">
+            <div className="relative h-72 md:h-96">
+                <img src={item.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa'} className="w-full h-full object-cover" />
+                <button onClick={() => navigate(-1)} className="absolute top-5 left-5 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"><ChevronLeft size={24}/></button>
+                <button className="absolute top-5 right-5 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-red-500 transition-all"><Heart size={20}/></button>
             </div>
-
-            <div className="p-5">
-                {/* Mode Toggle */}
-                <div className="bg-gray-100 p-1 rounded-xl flex mb-8">
-                    <button onClick={() => setMode('existing')} className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${mode === 'existing' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}>Select from Inventory</button>
-                    <button onClick={() => setMode('new')} className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${mode === 'new' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}>Create New</button>
+            
+            <div className="max-w-4xl mx-auto px-6 py-8">
+                <div className="flex justify-between items-start mb-6">
+                    <div>
+                        <span className="text-[#ff4b9a] font-bold text-xs uppercase tracking-wider mb-2 block">{item.category}</span>
+                        <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">{item.name}</h1>
+                        <p className="text-gray-500 flex items-center gap-2"><MapPin size={16}/> {item.location || item.city}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-3xl font-black text-gray-900">{item.displayPrice}</p>
+                        <p className="text-xs text-gray-400 font-bold uppercase">{item.period}</p>
+                    </div>
                 </div>
 
-                {mode === 'existing' ? (
-                    <div className="space-y-4 pb-20">
-                        <p className="text-sm text-gray-500 font-medium">Select a unit or item to list.</p>
-                        {unlistedItems.length > 0 ? unlistedItems.map((item) => (
-                            <div 
-                                key={item.id} 
-                                onClick={() => setSelectedId(item.id)}
-                                className={`p-4 rounded-2xl border cursor-pointer flex justify-between items-center transition-all ${selectedId === item.id ? 'border-[#ff4b9a] bg-pink-50 ring-1 ring-[#ff4b9a]' : 'border-gray-200 hover:border-gray-300'}`}
-                            >
-                                <div>
-                                    <h4 className="font-bold text-gray-900 text-sm">{item.label}</h4>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md uppercase border border-gray-200">{item.type === 'Flat' ? 'Residential Unit' : item.type}</span>
-                                        <span className="text-xs text-gray-500 truncate max-w-[150px]">{item.sub}</span>
-                                    </div>
-                                </div>
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedId === item.id ? 'border-[#ff4b9a]' : 'border-gray-300'}`}>
-                                    {selectedId === item.id && <div className="w-2.5 h-2.5 bg-[#ff4b9a] rounded-full"></div>}
-                                </div>
-                            </div>
-                        )) : (
-                            <div className="text-center py-10 text-gray-400">
-                                <p>No unlisted items available.</p>
-                                <p className="text-xs mt-1">Create a new item to post.</p>
-                            </div>
-                        )}
-                        
-                        {selectedId && (
-                            <div className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t border-gray-100 safe-bottom shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-50">
-                                <div className="mb-4 flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                    <button onClick={() => setHideContact(!hideContact)} className={`w-10 h-6 rounded-full transition-colors relative ${hideContact ? 'bg-gray-900' : 'bg-gray-300'}`}>
-                                        <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${hideContact ? 'left-5' : 'left-1'}`}></div>
-                                    </button>
-                                    <span className="text-xs font-bold text-gray-700">Hide my contact details on listing</span>
-                                </div>
-                                <button onClick={handlePublish} className="w-full py-4 bg-[#ff4b9a] text-white font-bold rounded-2xl shadow-xl active:scale-95 transition-transform">
-                                    Publish to Marketplace
-                                </button>
-                            </div>
-                        )}
+                {isFlat && item.details && (
+                    <div className="grid grid-cols-3 gap-4 mb-8">
+                        <div className="bg-gray-50 p-4 rounded-2xl text-center border border-gray-100"><BedDouble size={24} className="mx-auto mb-2 text-gray-400"/><p className="font-bold text-gray-900">{item.details.bedrooms} Bed</p></div>
+                        <div className="bg-gray-50 p-4 rounded-2xl text-center border border-gray-100"><Bath size={24} className="mx-auto mb-2 text-gray-400"/><p className="font-bold text-gray-900">{item.details.washrooms} Bath</p></div>
+                        <div className="bg-gray-50 p-4 rounded-2xl text-center border border-gray-100"><Ruler size={24} className="mx-auto mb-2 text-gray-400"/><p className="font-bold text-gray-900">{item.details.size} sqft</p></div>
                     </div>
-                ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                        {[
-                            { label: 'Unit / Flat', icon: Building2, type: 'Residential', color: 'bg-blue-50 text-blue-600' },
-                            { label: 'Vehicle', icon: Car, type: 'Vehicle', color: 'bg-indigo-50 text-indigo-600' },
-                            { label: 'Equipment', icon: Camera, type: 'Gadget', color: 'bg-orange-50 text-orange-600' },
-                            { label: 'Service', icon: Briefcase, type: 'Professional', color: 'bg-purple-50 text-purple-600' },
-                        ].map((cat) => (
-                            <button 
-                                key={cat.label}
-                                onClick={() => handleCreateNew(cat.type)}
-                                className="flex flex-col items-center justify-center gap-3 p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all active:scale-95 bg-white"
-                            >
-                                <div className={`w-14 h-14 rounded-full flex items-center justify-center ${cat.color}`}>
-                                    <cat.icon size={28} />
-                                </div>
-                                <span className="font-bold text-gray-900">{cat.label}</span>
+                )}
+
+                <div className="space-y-6">
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-3">Description</h3>
+                        <p className="text-gray-600 leading-relaxed text-sm">
+                            {item.listing_description || item.description || "No description provided. Contact the owner for more details."}
+                        </p>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-3">Amenities & Features</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {(item.amenities || ['Verified', 'Secure', 'Available']).map((a: string) => (
+                                <span key={a} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold border border-gray-200">{a}</span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t border-gray-100 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] safe-bottom z-40">
+                <div className="max-w-4xl mx-auto flex gap-4">
+                    {isOwner ? (
+                        <button onClick={() => navigate('/myspace/inventory')} className="flex-1 py-4 bg-gray-100 text-gray-900 font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors">
+                            Manage in Inventory
+                        </button>
+                    ) : (
+                        <>
+                            <button onClick={() => window.location.href = `tel:123`} className="px-6 py-4 bg-gray-100 text-gray-900 font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"><Phone size={20}/></button>
+                            <button onClick={handleRequest} className="flex-1 py-4 bg-[#2d1b4e] text-white font-bold rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
+                                <MessageCircle size={20}/> Request to Rent
                             </button>
-                        ))}
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- POST AD FLOW ---
+const PostAd: React.FC = () => {
+    const navigate = useNavigate();
+    const [step, setStep] = useState(1);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [selectedType, setSelectedType] = useState<string>('Flat');
+    
+    // Fetch unlisted assets
+    const flats = DataService.getFlats().filter(f => !f.is_listed);
+    const vehicles = DataService.getVehicles().filter(v => !v.is_listed);
+    const gadgets = DataService.getGadgets().filter(g => !g.is_listed);
+
+    const handlePost = () => {
+        if (selectedId) {
+            DataService.toggleListing(selectedId, selectedType as any, true);
+            navigate('/marketplace/manage');
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            <div className="bg-white p-5 border-b border-gray-100 sticky top-0 z-40 flex justify-between items-center">
+                <button onClick={() => step === 1 ? navigate(-1) : setStep(1)}><ChevronLeft size={24}/></button>
+                <h2 className="font-bold text-lg">Post to Marketplace</h2>
+                <div className="w-6"/>
+            </div>
+
+            <div className="flex-1 p-5 overflow-y-auto">
+                {step === 1 && (
+                    <div className="space-y-6">
+                        <div>
+                            <h3 className="font-bold text-xl text-gray-900 mb-1">Select Asset</h3>
+                            <p className="text-sm text-gray-500">Choose an item from your inventory to list.</p>
+                        </div>
+
+                        {/* List Groups */}
+                        <div className="space-y-4">
+                            {flats.length > 0 && (
+                                <div>
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Properties</h4>
+                                    {flats.map(f => (
+                                        <div key={f.id} onClick={() => { setSelectedId(f.id); setSelectedType('Flat'); setStep(2); }} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center mb-2 cursor-pointer hover:border-[#ff4b9a]">
+                                            <div><h5 className="font-bold text-gray-900">Flat {f.flat_no}</h5><p className="text-xs text-gray-500">{f.size_sqft} sqft • {f.floor_no}th Floor</p></div>
+                                            <ChevronRight size={16} className="text-gray-300"/>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {vehicles.length > 0 && (
+                                <div>
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Vehicles</h4>
+                                    {vehicles.map(v => (
+                                        <div key={v.id} onClick={() => { setSelectedId(v.id); setSelectedType('Vehicle'); setStep(2); }} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center mb-2 cursor-pointer hover:border-[#ff4b9a]">
+                                            <div><h5 className="font-bold text-gray-900">{v.name}</h5><p className="text-xs text-gray-500">{v.license_plate}</p></div>
+                                            <ChevronRight size={16} className="text-gray-300"/>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            {flats.length === 0 && vehicles.length === 0 && gadgets.length === 0 && (
+                                <div className="text-center py-20">
+                                    <ShoppingBag size={48} className="mx-auto text-gray-300 mb-4"/>
+                                    <p className="text-gray-500 font-medium mb-4">No unlisted assets found.</p>
+                                    <button onClick={() => navigate('/myspace/inventory/select-type')} className="bg-[#2d1b4e] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg">Add to Inventory</button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {step === 2 && (
+                    <div className="space-y-6 animate-in slide-in-from-right">
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                            <h3 className="font-bold text-lg text-gray-900 mb-4">Listing Settings</h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 mb-1.5 block">Rent Start Date</label>
+                                    <input type="date" className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" defaultValue={new Date().toISOString().slice(0, 10)}/>
+                                </div>
+                                <div className="flex items-center justify-between py-2">
+                                    <span className="font-bold text-gray-700">Negotiable?</span>
+                                    <div className="w-12 h-7 bg-[#ff4b9a] rounded-full p-1"><div className="w-5 h-5 bg-white rounded-full translate-x-5 shadow-sm"/></div>
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={handlePost} className="w-full py-4 bg-[#ff4b9a] text-white font-bold rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
+                            Post as TO-LET
+                        </button>
                     </div>
                 )}
             </div>
