@@ -1,0 +1,8 @@
+{
+  "name": "Bhara.online - Bariwala Space",
+  "description": "A comprehensive property management tool for lenders (Bariwala) to manage buildings, flats, renters, and payments.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
