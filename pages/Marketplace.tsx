@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ShoppingBag, MapPin, Star, Building2, Car, Camera, Briefcase, Calendar, ChevronLeft, ChevronRight, Share2, Heart, Phone, Mail, CheckCircle2, Clock, Plus, ArrowRight, User, X, BedDouble, Bath, Ruler, Fuel, Settings2, ShieldCheck, Eye, EyeOff, LayoutGrid, Zap, Image as ImageIcon, MessageCircle, Edit3, Trash2 } from 'lucide-react';
+import { Search, Filter, ShoppingBag, MapPin, Star, Building2, Car, Camera, Briefcase, Calendar, ChevronLeft, ChevronRight, Share2, Heart, Phone, Mail, CheckCircle2, Clock, Plus, ArrowRight, User, X, BedDouble, Bath, Ruler, Fuel, Settings2, ShieldCheck, Eye, EyeOff, LayoutGrid, Zap, Image as ImageIcon, MessageCircle, Edit3, Trash2, Navigation, MousePointerClick, Check } from 'lucide-react';
 import { Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { DataService, ChatService, UserService } from '../services/mockData';
 import { AssetType, RentCycle } from '../types';
@@ -21,79 +21,71 @@ const Marketplace: React.FC = () => {
   );
 };
 
-// --- ASSET CARD ---
+// --- ASSET CARD (E-Commerce Style) ---
 const AssetCard: React.FC<{ item: any, onClick: () => void, isOwner?: boolean, onEdit?: () => void, onUnlist?: () => void }> = ({ item, onClick, isOwner, onEdit, onUnlist }) => {
     const isFlat = item.assetType === 'Residential';
-    const isVehicle = item.assetType === 'Vehicle';
-    const isGadget = item.assetType === 'Gadget';
-
+    const isInstant = item.booking_type === 'instant';
+    
     return (
         <div 
             onClick={onClick}
-            className="group bg-white rounded-[1.5rem] border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] transition-all duration-300 overflow-hidden cursor-pointer active:scale-[0.98] flex flex-col h-full hover:-translate-y-1 relative"
+            className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer flex flex-col h-full relative"
         >
-            <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+            {/* Image Area */}
+            <div className="relative aspect-square bg-gray-100 overflow-hidden">
                 <img 
                     src={item.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800'} 
                     alt={item.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <div className="absolute top-3 left-3 flex gap-2">
-                    <span className="px-3 py-1 bg-white/95 backdrop-blur-md rounded-full text-[10px] font-extrabold text-gray-900 uppercase tracking-wide shadow-sm flex items-center gap-1">
+                    <span className="px-2 py-1 bg-white/90 backdrop-blur-md rounded-lg text-[10px] font-bold text-gray-900 uppercase tracking-wide shadow-sm">
                         {item.category}
                     </span>
+                    {isInstant && <span className="px-2 py-1 bg-[#ff4b9a]/90 backdrop-blur-md rounded-lg text-[10px] font-bold text-white uppercase tracking-wide shadow-sm flex items-center gap-1"><Zap size={8}/> Instant</span>}
                 </div>
-                {isOwner && (
-                    <div className="absolute top-3 right-3 flex gap-2">
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); onEdit && onEdit(); }} 
-                            className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-gray-700 hover:bg-white hover:text-blue-600 shadow-sm"
-                        >
-                            <Edit3 size={14} />
-                        </button>
-                    </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent pt-10">
-                    <div className="flex items-center gap-1 text-[11px] text-white font-medium">
-                        <MapPin size={12} className="text-[#ff4b9a]"/> {item.city || item.location || 'Dhaka'}
+                <button className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-md rounded-full text-gray-400 hover:text-red-500 transition-colors">
+                    <Heart size={14} />
+                </button>
+                
+                {/* Location Overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 via-black/20 to-transparent">
+                    <div className="flex items-center gap-1 text-[10px] text-white font-medium">
+                        <MapPin size={10} className="text-[#ff4b9a]"/> {item.city || item.location || 'Dhaka'}
                     </div>
                 </div>
             </div>
-            <div className="p-4 flex flex-col flex-1 justify-between">
-                <div>
-                    <h3 className="text-base font-bold text-gray-900 leading-snug line-clamp-1 mb-1 group-hover:text-[#ff4b9a] transition-colors">{item.name}</h3>
-                    <div className="flex items-center gap-3 mt-2 text-gray-500 text-xs font-medium">
-                        {isFlat && item.details && (
-                            <>
-                                <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md"><BedDouble size={12}/> {item.details.bedrooms} Bed</span>
-                                <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md"><Ruler size={12}/> {item.details.size} sqft</span>
-                            </>
-                        )}
-                        {isVehicle && item.details && (
-                            <>
-                                <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md"><Fuel size={12}/> {item.details.fuel}</span>
-                                <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md"><Settings2 size={12}/> {item.details.transmission}</span>
-                            </>
-                        )}
-                        {isGadget && item.details && (
-                            <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">{item.details.brand} {item.details.model}</span>
-                        )}
+
+            {/* Content Area */}
+            <div className="p-4 flex flex-col flex-1">
+                <div className="flex justify-between items-start mb-1">
+                    <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 flex-1 mr-2">{item.name}</h3>
+                    <div className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded text-[10px] font-bold text-gray-600">
+                        <Star size={10} className="text-orange-400 fill-orange-400"/> 4.8
                     </div>
                 </div>
-                <div className="flex justify-between items-end pt-4 border-t border-gray-50 mt-3">
+
+                {/* Quick Specs */}
+                <p className="text-xs text-gray-500 mb-3 line-clamp-1">
+                    {isFlat ? `${item.details?.bedrooms || 3} Bed • ${item.details?.size || 1200} sqft` : item.listing_description || 'Verified Asset'}
+                </p>
+
+                <div className="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
                     <div>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Rent</span>
-                        <div className="flex items-baseline gap-1">
-                            <p className="text-lg font-black text-gray-900">{item.displayPrice}</p>
-                            <span className="text-[10px] font-bold text-gray-400">{item.period || ''}</span>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase">Rent</p>
+                        <div className="flex items-baseline gap-0.5">
+                            <span className="text-base font-extrabold text-[#2d1b4e]">{item.displayPrice}</span>
+                            <span className="text-[10px] text-gray-500 font-medium">{item.period}</span>
                         </div>
                     </div>
-                    {isOwner && (
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); onUnlist && onUnlist(); }}
-                            className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded hover:bg-red-100"
-                        >
-                            Unlist
+                    {isOwner ? (
+                        <div className="flex gap-2">
+                            <button onClick={(e) => { e.stopPropagation(); onEdit && onEdit(); }} className="p-2 bg-gray-100 rounded-full hover:bg-blue-50 text-gray-600 hover:text-blue-600"><Edit3 size={14}/></button>
+                            <button onClick={(e) => { e.stopPropagation(); onUnlist && onUnlist(); }} className="p-2 bg-gray-100 rounded-full hover:bg-red-50 text-gray-600 hover:text-red-600"><Trash2 size={14}/></button>
+                        </div>
+                    ) : (
+                        <button className="bg-[#ff4b9a] text-white p-2 rounded-xl shadow-lg shadow-pink-200 active:scale-95 transition-transform">
+                            <ArrowRight size={16}/>
                         </button>
                     )}
                 </div>
@@ -125,49 +117,296 @@ const MarketplaceGrid: React.FC = () => {
   const handlePostAd = () => isAuth() ? navigate('post') : navigate('/login');
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28">
-        <div className="bg-white/95 backdrop-blur-md sticky top-0 z-30 shadow-sm border-b border-gray-200 transition-all duration-300">
-            <div className="max-w-7xl mx-auto w-full px-5 md:px-8 py-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                    <div className="flex items-center justify-between w-full md:w-auto">
-                         <div className="flex items-center gap-3">
-                            <div className="md:hidden"><Logo size="sm" /></div>
-                            <h2 className="text-xl font-bold text-gray-900">Marketplace</h2>
-                        </div>
-                        <div className="flex gap-2 md:hidden">
-                            <button onClick={() => navigate('manage')} className="bg-gray-100 p-2 rounded-full"><User size={20}/></button>
-                            <button onClick={handlePostAd} className="flex items-center gap-2 bg-[#2d1b4e] text-white px-4 py-2 rounded-full shadow-lg active:scale-95 transition-all"><Plus size={16} /><span className="text-xs font-bold uppercase tracking-wide">Post</span></button>
-                        </div>
+    <div className="min-h-screen bg-[#f8f9fa] pb-28">
+        {/* Sticky Header */}
+        <div className="bg-white sticky top-0 z-30 shadow-sm border-b border-gray-200 transition-all duration-300">
+            <div className="max-w-7xl mx-auto w-full px-4 py-3">
+                <div className="flex items-center justify-between gap-4 mb-3">
+                    <div className="flex items-center gap-2" onClick={() => navigate('/home')}>
+                        <div className="md:hidden"><Logo size="sm" /></div>
+                        <h2 className="hidden md:block text-xl font-extrabold text-gray-900 tracking-tight">Marketplace</h2>
                     </div>
-                    <div className="relative w-full md:max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="w-full pl-11 pr-4 py-3 bg-gray-100 border-transparent rounded-2xl text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ff4b9a]/20 focus:bg-white focus:border-gray-200 transition-all placeholder:text-gray-400"/>
+                    
+                    {/* Search Bar */}
+                    <div className="flex-1 max-w-lg relative">
+                        <input 
+                            type="text" 
+                            value={search} 
+                            onChange={(e) => setSearch(e.target.value)} 
+                            placeholder="Search cars, cameras, flats..." 
+                            className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border-transparent rounded-xl text-sm font-bold text-gray-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#ff4b9a] transition-all placeholder:text-gray-400"
+                        />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                     </div>
-                    <div className="hidden md:flex gap-3">
-                        <button onClick={() => navigate('manage')} className="px-5 py-2.5 rounded-full border border-gray-200 font-bold text-sm hover:bg-gray-50 text-gray-700">My Listings</button>
-                        <button onClick={handlePostAd} className="flex items-center gap-2 bg-[#2d1b4e] text-white px-5 py-2.5 rounded-full shadow-lg active:scale-95 transition-all hover:bg-[#3d2566] hover:shadow-xl"><Plus size={18} /><span className="text-xs font-bold uppercase tracking-wide">Post Ad</span></button>
+
+                    <div className="flex gap-2">
+                        <button onClick={() => navigate('manage')} className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 hidden sm:block"><User size={20}/></button>
+                        <button onClick={handlePostAd} className="flex items-center gap-2 bg-[#2d1b4e] text-white px-4 py-2.5 rounded-xl shadow-lg active:scale-95 transition-all">
+                            <Plus size={18} />
+                            <span className="text-xs font-bold uppercase hidden sm:block">Post Ad</span>
+                        </button>
                     </div>
                 </div>
-                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+
+                {/* Categories */}
+                <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
                     {[
-                        { id: 'All', icon: null }, { id: 'Real Estate', icon: Building2 }, { id: 'Vehicles', icon: Car },
+                        { id: 'All', icon: LayoutGrid }, { id: 'Real Estate', icon: Building2 }, { id: 'Vehicles', icon: Car },
                         { id: 'Tech', icon: Camera }, { id: 'Events', icon: Calendar }, { id: 'Services', icon: Briefcase }
                     ].map(cat => (
-                        <button key={cat.id} onClick={() => setActiveTab(cat.id as any)} className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all border ${activeTab === cat.id ? 'bg-[#ff4b9a] border-[#ff4b9a] text-white shadow-md shadow-pink-200' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'}`}>
-                            {cat.icon && <cat.icon size={14} />}{cat.id}
+                        <button 
+                            key={cat.id} 
+                            onClick={() => setActiveTab(cat.id as any)} 
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all border ${activeTab === cat.id ? 'bg-[#ff4b9a] border-[#ff4b9a] text-white shadow-md' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                        >
+                            <cat.icon size={14} />{cat.id}
                         </button>
                     ))}
                 </div>
             </div>
         </div>
-        <div className="max-w-7xl mx-auto p-5 md:p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {filteredItems.map((item, i) => <AssetCard key={i} item={item} onClick={() => navigate(`item/${item.id}`)} />)}
+
+        {/* Content Grid */}
+        <div className="max-w-7xl mx-auto p-4 md:p-6">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-gray-900">{filteredItems.length} Listings Found</h3>
+                <button className="flex items-center gap-1 text-xs font-bold text-gray-500 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"><Filter size={14}/> Filter</button>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {filteredItems.map((item, i) => <AssetCard key={i} item={item} onClick={() => navigate(`item/${item.id}`)} />)}
+            </div>
+            
+            {filteredItems.length === 0 && (
+                <div className="text-center py-20 flex flex-col items-center">
+                    <ShoppingBag size={64} className="text-gray-200 mb-4"/>
+                    <h3 className="text-lg font-bold text-gray-900">No items found</h3>
+                    <p className="text-sm text-gray-500">Try adjusting your search or category.</p>
+                </div>
+            )}
         </div>
     </div>
   );
 };
 
-// --- MY LISTINGS ---
+// --- ITEM DETAILS (E-Commerce Style) ---
+const ItemDetails: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+    const item = DataService.getMarketplaceItems().find(i => i.id === id) as any;
+    const currentUser = UserService.getCurrentUser();
+    const [showBookingModal, setShowBookingModal] = useState(false);
+
+    if (!item) return <div>Item not found</div>;
+
+    const isOwner = item.user_id === currentUser.id;
+    // Mock Owner Data (In real app, fetch from user_id)
+    const owner = {
+        name: isOwner ? currentUser.name : 'Rafiqul Islam', // Mock name for demo
+        joined: '2023',
+        rating: 4.9,
+        response: '1 hr',
+        avatar: isOwner ? currentUser.avatar : 'https://i.pravatar.cc/150?u=owner',
+        verified: true
+    };
+
+    const isInstant = item.booking_type === 'instant';
+
+    const handleAction = () => {
+        if (!isAuth()) { navigate('/login'); return; }
+        
+        if (isOwner) {
+            // Even if owner, show preview alert instead of manage
+            alert("This is how users see your listing. Use My Space to manage.");
+            return;
+        }
+
+        if (isInstant) {
+            // Trigger Booking Modal
+            setShowBookingModal(true);
+        } else {
+            // Start Chat Flow
+            DataService.notifyOwner(item.user_id, 'New Rental Request', `${currentUser.name} requested to rent ${item.name}.`);
+            ChatService.startChat(item.user_id, `Hi, I am interested in renting ${item.name}. Is it available?`);
+            navigate('/inbox');
+        }
+    };
+
+    const handleConfirmBooking = () => {
+        // Mock Booking Success
+        DataService.notifyOwner(item.user_id, 'New Instant Booking', `${currentUser.name} booked ${item.name} instantly.`);
+        alert('Booking Confirmed! The owner has been notified.');
+        setShowBookingModal(false);
+        navigate('/inbox');
+    };
+
+    return (
+        <div className="min-h-screen bg-white pb-32 animate-in slide-in-from-bottom duration-300">
+            {/* Header / Nav */}
+            <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex justify-between items-center">
+                <button onClick={() => navigate(-1)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"><ChevronLeft size={20}/></button>
+                <h1 className="text-sm font-bold text-gray-900 truncate max-w-[200px]">{item.name}</h1>
+                <div className="flex gap-2">
+                    <button className="p-2 bg-gray-100 rounded-full hover:text-red-500 transition-colors"><Heart size={20}/></button>
+                    <button className="p-2 bg-gray-100 rounded-full hover:text-blue-500 transition-colors"><Share2 size={20}/></button>
+                </div>
+            </div>
+
+            <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 p-0 md:p-8">
+                {/* Left: Images */}
+                <div className="bg-gray-100 md:rounded-3xl overflow-hidden relative group aspect-[4/3] md:aspect-square">
+                    <img src={item.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa'} className="w-full h-full object-cover" />
+                    <div className="absolute bottom-4 right-4 bg-black/50 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md flex items-center gap-1">
+                        <ImageIcon size={12}/> 1/3
+                    </div>
+                    {isInstant && <div className="absolute top-4 left-4 bg-[#ff4b9a] text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1"><Zap size={12}/> Instant Book</div>}
+                </div>
+
+                {/* Right: Details */}
+                <div className="px-5 md:px-0 space-y-8">
+                    
+                    {/* Title & Price */}
+                    <div>
+                        <div className="flex justify-between items-start mb-2">
+                            <span className="text-[#ff4b9a] font-extrabold text-xs uppercase tracking-wider bg-pink-50 px-2 py-1 rounded-md">{item.category}</span>
+                            <div className="flex items-center gap-1 text-orange-500 font-bold text-sm"><Star size={14} fill="currentColor"/> 4.8 (24)</div>
+                        </div>
+                        <h1 className="text-3xl font-black text-gray-900 mb-2 leading-tight">{item.name}</h1>
+                        <p className="text-gray-500 flex items-center gap-2 text-sm font-medium"><MapPin size={16} className="text-gray-400"/> {item.location || item.city}</p>
+                        
+                        <div className="mt-6 flex items-baseline gap-2 pb-6 border-b border-gray-100">
+                            <span className="text-4xl font-black text-gray-900">{item.displayPrice}</span>
+                            <span className="text-base font-bold text-gray-400">{item.period}</span>
+                        </div>
+                    </div>
+
+                    {/* Owner / Lender Profile Card */}
+                    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="relative">
+                                <img src={owner.avatar} className="w-12 h-12 rounded-full border-2 border-white shadow-sm" alt="Owner"/>
+                                {owner.verified && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-0.5 border-2 border-white"><CheckCircle2 size={10}/></div>}
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-gray-900 text-sm">{owner.name}</h4>
+                                <p className="text-[10px] text-gray-500 font-medium">Owner • Joined {owner.joined}</p>
+                                <p className="text-[10px] text-green-600 font-bold mt-0.5 flex items-center gap-1"><Clock size={10}/> Responds within {owner.response}</p>
+                            </div>
+                        </div>
+                        <button onClick={() => { if(!isOwner) ChatService.startChat(item.user_id, `Hi, about ${item.name}...`); navigate('/inbox'); }} className="bg-white border border-gray-200 p-2.5 rounded-xl text-gray-600 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm">
+                            <MessageCircle size={20}/>
+                        </button>
+                    </div>
+
+                    {/* Specifications Grid */}
+                    {item.details && (
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">Specifications</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                {Object.entries(item.details).map(([key, value]) => (
+                                    <div key={key} className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
+                                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
+                                            {key === 'bedrooms' ? <BedDouble size={16}/> : 
+                                             key === 'size' ? <Ruler size={16}/> :
+                                             key === 'fuel' ? <Fuel size={16}/> : <Zap size={16}/>}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase">{key}</p>
+                                            <p className="text-sm font-bold text-gray-900 capitalize">{value as string}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Description */}
+                    <div>
+                        <h3 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-wider">About this rental</h3>
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                            {item.listing_description || item.description || "Well maintained and fully verified asset. Contact owner for more specific details regarding availability and terms."}
+                        </p>
+                    </div>
+
+                    {/* Location Map Placeholder */}
+                    <div>
+                        <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">Location</h3>
+                        <div className="h-40 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-center relative overflow-hidden group cursor-pointer">
+                            <MapPin size={32} className="text-blue-500 mb-2"/>
+                            <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="bg-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">View on Map</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom Action Bar */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] safe-bottom z-50">
+                <div className="max-w-6xl mx-auto flex items-center gap-4">
+                    <div className="hidden md:block">
+                        <p className="text-xs text-gray-400 font-bold uppercase">Total Price</p>
+                        <p className="text-xl font-black text-gray-900">{item.displayPrice}</p>
+                    </div>
+                    <button onClick={() => window.location.href = `tel:123`} className="w-14 h-14 bg-gray-100 text-gray-900 rounded-2xl flex items-center justify-center hover:bg-gray-200 transition-colors">
+                        <Phone size={24}/>
+                    </button>
+                    
+                    {/* Dynamic Booking Button */}
+                    <button 
+                        onClick={handleAction} 
+                        className={`flex-1 py-4 font-bold rounded-2xl shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${isInstant ? 'bg-black text-white shadow-gray-200' : 'bg-[#2d1b4e] text-white shadow-indigo-200'}`}
+                    >
+                        {isOwner ? (
+                            <span>Preview Mode</span> 
+                        ) : isInstant ? (
+                            <>Book Instantly <Zap size={20} className="fill-current text-yellow-400"/></>
+                        ) : (
+                            <>Request to Rent <MessageCircle size={20}/></>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* Booking Confirmation Modal */}
+            {showBookingModal && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative">
+                        <button onClick={() => setShowBookingModal(false)} className="absolute top-4 right-4 p-2 bg-gray-50 rounded-full hover:bg-gray-100"><X size={20}/></button>
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
+                                <CheckCircle2 size={32}/>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900">Confirm Booking</h3>
+                            <p className="text-sm text-gray-500 mt-1">You are booking {item.name}</p>
+                        </div>
+                        
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-6">
+                            <div className="flex justify-between text-sm mb-2">
+                                <span className="text-gray-500">Rate</span>
+                                <span className="font-bold">{item.displayPrice} {item.period}</span>
+                            </div>
+                            <div className="flex justify-between text-sm mb-2">
+                                <span className="text-gray-500">Service Fee</span>
+                                <span className="font-bold">৳ 50</span>
+                            </div>
+                            <div className="border-t border-gray-200 pt-2 flex justify-between text-base font-black">
+                                <span>Total</span>
+                                <span>{item.displayPrice}</span>
+                            </div>
+                        </div>
+
+                        <button onClick={handleConfirmBooking} className="w-full py-4 bg-black text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
+                            Confirm & Pay
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// --- MY LISTINGS (Simplified) ---
 const MyListings: React.FC = () => {
     const navigate = useNavigate();
     const currentUser = UserService.getCurrentUser();
@@ -181,13 +420,11 @@ const MyListings: React.FC = () => {
     };
 
     const handleEdit = (item: any) => {
-        // Map to inventory config route based on type
         if(item.assetType === 'Residential' && item.flat_no) {
             navigate('/myspace/inventory/config-flat', { state: { editId: item.id, buildingId: item.building_id } });
         } else if (item.assetType === 'Vehicle') {
-            navigate('/myspace/inventory/config-vehicle', { state: { editId: item.id } }); // Note: Need to implement edit loading in Inventory for Vehicle
+            navigate('/myspace/inventory/config-vehicle', { state: { editId: item.id } });
         } else {
-            alert("Edit for this type coming soon. Use Inventory to manage.");
             navigate('/myspace/inventory');
         }
     };
@@ -198,7 +435,6 @@ const MyListings: React.FC = () => {
                 <button onClick={() => navigate('/marketplace')} className="p-2 rounded-full hover:bg-gray-100"><ChevronLeft size={24}/></button>
                 <h2 className="font-bold text-lg">My Listings</h2>
             </div>
-            
             <div className="max-w-7xl mx-auto p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {myItems.map(item => (
                     <AssetCard 
@@ -217,96 +453,6 @@ const MyListings: React.FC = () => {
                         <button onClick={() => navigate('/marketplace/post')} className="mt-4 text-[#ff4b9a] font-bold">Post an Ad</button>
                     </div>
                 )}
-            </div>
-        </div>
-    );
-};
-
-// --- ITEM DETAILS ---
-const ItemDetails: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
-    // Simplified fetch logic for demo - iterates all arrays
-    const item = DataService.getMarketplaceItems().find(i => i.id === id) as any;
-    const currentUser = UserService.getCurrentUser();
-
-    if (!item) return <div>Item not found</div>;
-
-    const isFlat = item.assetType === 'Residential';
-    const isOwner = item.user_id === currentUser.id;
-
-    const handleRequest = () => {
-        if (!isAuth()) {
-            navigate('/login');
-            return;
-        }
-        // Start a chat
-        ChatService.startChat(item.user_id, `Hi, I am interested in your ${item.name}. Is it available?`);
-        navigate('/inbox');
-    };
-
-    return (
-        <div className="min-h-screen bg-white pb-32 animate-in slide-in-from-bottom duration-300">
-            <div className="relative h-72 md:h-96">
-                <img src={item.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa'} className="w-full h-full object-cover" />
-                <button onClick={() => navigate(-1)} className="absolute top-5 left-5 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"><ChevronLeft size={24}/></button>
-                <button className="absolute top-5 right-5 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-red-500 transition-all"><Heart size={20}/></button>
-            </div>
-            
-            <div className="max-w-4xl mx-auto px-6 py-8">
-                <div className="flex justify-between items-start mb-6">
-                    <div>
-                        <span className="text-[#ff4b9a] font-bold text-xs uppercase tracking-wider mb-2 block">{item.category}</span>
-                        <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">{item.name}</h1>
-                        <p className="text-gray-500 flex items-center gap-2"><MapPin size={16}/> {item.location || item.city}</p>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-3xl font-black text-gray-900">{item.displayPrice}</p>
-                        <p className="text-xs text-gray-400 font-bold uppercase">{item.period}</p>
-                    </div>
-                </div>
-
-                {isFlat && item.details && (
-                    <div className="grid grid-cols-3 gap-4 mb-8">
-                        <div className="bg-gray-50 p-4 rounded-2xl text-center border border-gray-100"><BedDouble size={24} className="mx-auto mb-2 text-gray-400"/><p className="font-bold text-gray-900">{item.details.bedrooms} Bed</p></div>
-                        <div className="bg-gray-50 p-4 rounded-2xl text-center border border-gray-100"><Bath size={24} className="mx-auto mb-2 text-gray-400"/><p className="font-bold text-gray-900">{item.details.washrooms} Bath</p></div>
-                        <div className="bg-gray-50 p-4 rounded-2xl text-center border border-gray-100"><Ruler size={24} className="mx-auto mb-2 text-gray-400"/><p className="font-bold text-gray-900">{item.details.size} sqft</p></div>
-                    </div>
-                )}
-
-                <div className="space-y-6">
-                    <div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-3">Description</h3>
-                        <p className="text-gray-600 leading-relaxed text-sm">
-                            {item.listing_description || item.description || "No description provided. Contact the owner for more details."}
-                        </p>
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-3">Amenities & Features</h3>
-                        <div className="flex flex-wrap gap-2">
-                            {(item.amenities || ['Verified', 'Secure', 'Available']).map((a: string) => (
-                                <span key={a} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold border border-gray-200">{a}</span>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t border-gray-100 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] safe-bottom z-40">
-                <div className="max-w-4xl mx-auto flex gap-4">
-                    {isOwner ? (
-                        <button onClick={() => navigate('/myspace/inventory')} className="flex-1 py-4 bg-gray-100 text-gray-900 font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors">
-                            Manage in Inventory
-                        </button>
-                    ) : (
-                        <>
-                            <button onClick={() => window.location.href = `tel:123`} className="px-6 py-4 bg-gray-100 text-gray-900 font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"><Phone size={20}/></button>
-                            <button onClick={handleRequest} className="flex-1 py-4 bg-[#2d1b4e] text-white font-bold rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
-                                <MessageCircle size={20}/> Request to Rent
-                            </button>
-                        </>
-                    )}
-                </div>
             </div>
         </div>
     );

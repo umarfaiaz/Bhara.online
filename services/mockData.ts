@@ -57,6 +57,7 @@ let vehicles: Vehicle[] = [
       'Monthly': 45000
     },
     status: 'rented',
+    booking_type: 'instant', // Instant Booking
     created_at: new Date().toISOString(),
     is_listed: true,
     images: ['https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800']
@@ -69,6 +70,7 @@ let vehicles: Vehicle[] = [
     type: 'Bike',
     rates: { 'Daily': 1000 },
     status: 'active',
+    booking_type: 'request', // Request Booking
     created_at: new Date().toISOString(),
     is_listed: false, // Unlisted
     images: ['https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&q=80&w=800']
@@ -90,6 +92,7 @@ let gadgets: Gadget[] = [
         default_rent_cycle: 'Daily',
         security_deposit: 5000,
         status: 'rented',
+        booking_type: 'instant',
         created_at: new Date().toISOString(),
         is_listed: true,
         images: ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=800']
@@ -110,6 +113,7 @@ let services: ServiceAsset[] = [
       'Hourly': 5000
     },
     status: 'active',
+    booking_type: 'request',
     created_at: new Date().toISOString(),
     is_listed: true,
     images: ['https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80&w=800']
@@ -126,6 +130,7 @@ let services: ServiceAsset[] = [
       'Hourly': 1500
     },
     status: 'active',
+    booking_type: 'request',
     created_at: new Date().toISOString(),
     is_listed: true,
     hide_contact: true,
@@ -157,7 +162,8 @@ let flats: Flat[] = [
     is_vacant: false,
     created_at: new Date().toISOString(),
     tenant_id: 't1',
-    is_listed: false
+    is_listed: false,
+    booking_type: 'request'
   },
   {
     id: 'f2',
@@ -181,6 +187,7 @@ let flats: Flat[] = [
     is_vacant: true,
     created_at: new Date().toISOString(),
     is_listed: true,
+    booking_type: 'request',
     images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=800']
   }
 ];
@@ -242,7 +249,7 @@ let bills: Bill[] = [
     id: 'bill_1',
     tenant_id: 't1',
     asset_type: 'Residential',
-    month: new Date().toISOString(),
+    month: new Date().toISOString(), // Current Month
     rent_amount: 25000,
     service_charge: 3000,
     water_bill: 500,
@@ -250,6 +257,7 @@ let bills: Bill[] = [
     electricity_bill: 1250,
     other_bills: 0,
     additional_charges_amount: 0,
+    extra_charges: [],
     total: 30550,
     status: 'unpaid',
     created_at: new Date().toISOString(),
@@ -268,12 +276,14 @@ let bills: Bill[] = [
       gas_bill: 0,
       fuel_cost: 0,
       additional_charges_amount: 0,
+      extra_charges: [],
       total: 45000,
-      status: 'unpaid',
+      status: 'paid',
       created_at: new Date().toISOString(),
       tenant_name: 'Mr. Rafiqul Islam',
       asset_name: 'Toyota Corolla',
-      asset_sub: 'Car Rental'
+      asset_sub: 'Car Rental',
+      paid_date: new Date().toISOString()
   }
 ];
 
@@ -644,28 +654,28 @@ export const DataService = {
 
   getFlats: (buildingId?: string) => buildingId ? flats.filter(f => f.building_id === buildingId) : flats,
   getFlatById: (id: string) => flats.find(f => f.id === id),
-  addFlat: (f: Partial<Flat>) => flats.push({ ...f, id: `f${Date.now()}`, is_vacant: true, created_at: new Date().toISOString() } as Flat),
+  addFlat: (f: Partial<Flat>) => flats.push({ ...f, id: `f${Date.now()}`, is_vacant: true, created_at: new Date().toISOString(), booking_type: 'request' } as Flat),
   updateFlat: (id: string, data: Partial<Flat>) => {
       flats = flats.map(f => f.id === id ? { ...f, ...data } : f);
   },
 
   getVehicles: () => vehicles,
   getVehicleById: (id: string) => vehicles.find(v => v.id === id),
-  addVehicle: (v: Vehicle) => vehicles.push({ ...v, user_id: currentUser.id, id: `v${Date.now()}`, created_at: new Date().toISOString() }),
+  addVehicle: (v: Vehicle) => vehicles.push({ ...v, user_id: currentUser.id, id: `v${Date.now()}`, created_at: new Date().toISOString(), booking_type: 'request' } as Vehicle),
   updateVehicle: (id: string, data: Partial<Vehicle>) => {
       vehicles = vehicles.map(v => v.id === id ? { ...v, ...data } : v);
   },
 
   getGadgets: () => gadgets,
   getGadgetById: (id: string) => gadgets.find(g => g.id === id),
-  addGadget: (g: Gadget) => gadgets.push({ ...g, user_id: currentUser.id, id: `g${Date.now()}`, created_at: new Date().toISOString() }),
+  addGadget: (g: Gadget) => gadgets.push({ ...g, user_id: currentUser.id, id: `g${Date.now()}`, created_at: new Date().toISOString(), booking_type: 'request' } as Gadget),
   updateGadget: (id: string, data: Partial<Gadget>) => {
       gadgets = gadgets.map(g => g.id === id ? { ...g, ...data } : g);
   },
 
   getServices: () => services,
   getServiceById: (id: string) => services.find(s => s.id === id),
-  addService: (s: ServiceAsset) => services.push({ ...s, user_id: currentUser.id, id: `s${Date.now()}`, created_at: new Date().toISOString() }),
+  addService: (s: ServiceAsset) => services.push({ ...s, user_id: currentUser.id, id: `s${Date.now()}`, created_at: new Date().toISOString(), booking_type: 'request' } as ServiceAsset),
   updateService: (id: string, data: Partial<ServiceAsset>) => {
       services = services.map(s => s.id === id ? { ...s, ...data } : s);
   },
@@ -739,6 +749,7 @@ export const DataService = {
           gas_bill: 0,
           electricity_bill: 0,
           additional_charges_amount: 0,
+          extra_charges: [],
           total: rentAmount,
           status: 'unpaid',
           created_at: new Date().toISOString(),
@@ -785,12 +796,17 @@ export const DataService = {
       bills = bills.map(b => {
           if (b.id === id) {
               const updated = { ...b, ...data };
-              if (data.electricity_bill !== undefined || data.additional_charges_amount !== undefined || data.fuel_cost !== undefined || data.toll_cost !== undefined) {
-                  const base = updated.rent_amount + updated.service_charge + updated.water_bill + updated.gas_bill;
-                  const extras = (updated.electricity_bill || 0) + (updated.other_bills || 0) + (updated.additional_charges_amount || 0);
-                  const variable = (updated.fuel_cost || 0) + (updated.driver_allowance || 0) + (updated.toll_cost || 0) + (updated.damage_cost || 0) + (updated.late_fee || 0);
-                  updated.total = base + extras + variable;
-              }
+              
+              // Recalculate total if charges change
+              const base = (updated.rent_amount || 0) + (updated.service_charge || 0) + (updated.water_bill || 0) + (updated.gas_bill || 0);
+              const extras = (updated.electricity_bill || 0) + (updated.other_bills || 0) + (updated.additional_charges_amount || 0);
+              const variable = (updated.fuel_cost || 0) + (updated.driver_allowance || 0) + (updated.toll_cost || 0) + (updated.damage_cost || 0) + (updated.late_fee || 0);
+              
+              // New Logic: Sum extra_charges
+              const dynamicExtras = updated.extra_charges?.reduce((acc, curr) => acc + curr.amount, 0) || 0;
+
+              updated.total = base + extras + variable + dynamicExtras;
+              
               return updated;
           }
           return b;
@@ -805,5 +821,13 @@ export const DataService = {
           created_at: new Date().toISOString(),
           status: 'Open'
       } as MaintenanceRequest);
+  },
+
+  // Simulate notification to owner (In real app, this would be a backend push)
+  notifyOwner: (userId: string, title: string, message: string) => {
+      // For mock purposes, we log this. In a full implementation, 
+      // this would push to the user's notification stream or trigger a push notification.
+      console.log(`[NOTIFICATION to ${userId}]: ${title} - ${message}`);
+      return true;
   }
 };

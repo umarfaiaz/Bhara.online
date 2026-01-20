@@ -42,6 +42,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout }) => {
   ];
 
   const shouldHideNavMobile = hideNavPaths.some(path => location.pathname.includes(path));
+  const isHomePage = location.pathname === '/home';
 
   return (
     <div className="flex flex-col min-h-screen w-full bg-[#f8f9fa] overflow-hidden selection:bg-[#ff4b9a]/20 font-sans">
@@ -91,7 +92,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout }) => {
       {/* Main Content Area */}
       {/* Added pt-[80px] to match header height exactly so content doesn't hide behind it */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative pt-0 md:pt-[80px]">
-        <main className={`flex-1 overflow-y-auto custom-scrollbar w-full ${shouldHideNavMobile ? 'pb-safe-bottom' : 'pb-32 md:pb-10'}`}>
+        <main className={`flex-1 overflow-y-auto custom-scrollbar w-full ${shouldHideNavMobile ? 'pb-safe-bottom' : (isHomePage ? 'pb-0' : 'pb-32 md:pb-10')}`}>
           <div className="w-full min-h-full">
             {children}
           </div>

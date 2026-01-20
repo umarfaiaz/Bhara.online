@@ -40,7 +40,7 @@ const Home: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white pb-32">
+    <div className="min-h-screen bg-white">
       {/* 1. HERO SECTION */}
       <section className="relative bg-[#2d1b4e] text-white overflow-hidden md:rounded-b-[4rem] rounded-b-[2.5rem] shadow-2xl min-h-[600px] flex flex-col justify-center">
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#ff4b9a] opacity-20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
@@ -184,9 +184,9 @@ const Home: React.FC = () => {
       </div>
 
       {/* FOOTER */}
-      <footer className="bg-gray-900 text-gray-400 py-20 px-6 text-sm">
+      <footer className="bg-gray-900 text-gray-400 pt-10 px-6 text-sm pb-32 md:pb-10">
         <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-12 mb-16">
+            <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-12 mb-8">
                 <div className="text-center md:text-left">
                     <div className="mb-6"><Logo light size="lg" /></div>
                     <p className="max-w-xs text-gray-500">The most trusted rental marketplace in Bangladesh. Safe, secure, and simple.</p>
@@ -211,7 +211,7 @@ const Home: React.FC = () => {
                     <div>
                         <h4 className="text-white font-bold mb-6 text-base">Social</h4>
                         <ul className="space-y-4">
-                            <li className="hover:text-white cursor-pointer transition-colors">Facebook</li>
+                            <li onClick={() => window.open('https://web.facebook.com/profile.php?id=61586846603763', '_blank')} className="hover:text-white cursor-pointer transition-colors">Facebook</li>
                             <li className="hover:text-white cursor-pointer transition-colors">Twitter</li>
                             <li className="hover:text-white cursor-pointer transition-colors">Instagram</li>
                         </ul>
@@ -226,7 +226,7 @@ const Home: React.FC = () => {
                 </div>
             </div>
             <div className="pt-8 border-t border-gray-800 text-center md:text-left text-gray-600">
-                <p>&copy; 2024 Bhara.online. All rights reserved.</p>
+                <p>&copy; 2026 Bairbhara.online. All Rights Reserved.</p>
             </div>
         </div>
       </footer>

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Plus, MapPin, Building2, Store, Briefcase, Users, Car, Scissors, ChevronRight, ChevronLeft, Minus, Trash2, AlertTriangle, MoreHorizontal, ArrowLeft, Home, Layers, CheckCircle2, LayoutGrid, DollarSign, BedDouble, Bath, Wind, Utensils, Armchair, Flame, Upload, UserPlus, Calendar, Send, Settings, PenTool, Zap, Shield, Warehouse, Camera, Bus, Truck, Bike, Ship, Edit3, X, User, Phone, Wifi, Video, Lock, Info, Compass, Droplets, Mic2, Star, CheckSquare, Tv, Grid, Fuel, Settings2, Monitor, Gamepad, Headphones, Music, FileText, Link } from 'lucide-react';
+import { Plus, MapPin, Building2, Store, Briefcase, Users, Car, Scissors, ChevronRight, ChevronLeft, Minus, Trash2, AlertTriangle, MoreHorizontal, ArrowLeft, Home, Layers, CheckCircle2, LayoutGrid, DollarSign, BedDouble, Bath, Wind, Utensils, Armchair, Flame, Upload, UserPlus, Calendar, Send, Settings, PenTool, Zap, Shield, Warehouse, Camera, Bus, Truck, Bike, Ship, Edit3, X, User, Phone, Wifi, Video, Lock, Info, Compass, Droplets, Mic2, Star, CheckSquare, Tv, Grid, Fuel, Settings2, Monitor, Gamepad, Headphones, Music, FileText, Link, MousePointerClick, MessageSquare } from 'lucide-react';
 import { DataService } from '../../services/mockData';
 import { CITIES, AREAS } from '../../constants';
 import { Building, Flat, Tenant, AssetType, Vehicle, Gadget, RentCycle, ServiceAsset } from '../../types';
@@ -51,6 +51,38 @@ const InputGroup: React.FC<{ label: string, children: React.ReactNode }> = ({ la
         {children}
     </div>
 );
+
+// New Reusable Booking Type Selector
+const BookingTypeSelector: React.FC<{ value: 'instant' | 'request' | undefined, onChange: (val: 'instant' | 'request') => void }> = ({ value, onChange }) => {
+    return (
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+            <h3 className="font-bold text-gray-900 flex items-center gap-2">Booking Preference</h3>
+            <div className="grid grid-cols-2 gap-4">
+                <button 
+                    onClick={() => onChange('instant')}
+                    className={`p-4 rounded-2xl border-2 text-left transition-all ${value === 'instant' ? 'border-[#ff4b9a] bg-pink-50' : 'border-gray-100 hover:border-gray-200'}`}
+                >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${value === 'instant' ? 'bg-[#ff4b9a] text-white' : 'bg-gray-100 text-gray-400'}`}>
+                        <MousePointerClick size={16}/>
+                    </div>
+                    <span className="block text-sm font-bold text-gray-900">Instant Book</span>
+                    <span className="text-[10px] text-gray-500 leading-tight mt-1 block">Renters book directly without approval.</span>
+                </button>
+
+                <button 
+                    onClick={() => onChange('request')}
+                    className={`p-4 rounded-2xl border-2 text-left transition-all ${value === 'request' ? 'border-[#ff4b9a] bg-pink-50' : 'border-gray-100 hover:border-gray-200'}`}
+                >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${value === 'request' ? 'bg-[#ff4b9a] text-white' : 'bg-gray-100 text-gray-400'}`}>
+                        <MessageSquare size={16}/>
+                    </div>
+                    <span className="block text-sm font-bold text-gray-900">Request Only</span>
+                    <span className="text-[10px] text-gray-500 leading-tight mt-1 block">Renters must contact you first.</span>
+                </button>
+            </div>
+        </div>
+    );
+};
 
 // --- ASSET LIST VIEW ---
 const AssetList: React.FC = () => {
@@ -112,7 +144,7 @@ const AssetList: React.FC = () => {
 
           {/* Vehicles */}
           {(activeTab === 'All' || activeTab === 'Vehicle') && vehicles.map(v => (
-              <div key={v.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+              <div key={v.id} onClick={() => navigate(`config-vehicle`, { state: { editId: v.id } })} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:scale-[0.98]">
                   <div className="flex gap-4">
                       <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
                           <Car size={24} />
@@ -120,9 +152,12 @@ const AssetList: React.FC = () => {
                       <div>
                           <h3 className="font-bold text-gray-900">{v.name}</h3>
                           <p className="text-xs text-gray-500">{v.license_plate}</p>
-                          <span className={`text-[10px] px-2 py-0.5 rounded font-bold mt-1 inline-block ${v.status === 'rented' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'}`}>
-                              {v.status === 'rented' ? 'Rented' : 'Available'}
-                          </span>
+                          <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-[10px] px-2 py-0.5 rounded font-bold inline-block ${v.status === 'rented' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'}`}>
+                                  {v.status === 'rented' ? 'Rented' : 'Available'}
+                              </span>
+                              {v.booking_type === 'instant' && <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-[#ff4b9a]/10 text-[#ff4b9a] flex items-center gap-1"><Zap size={8}/> Instant</span>}
+                          </div>
                       </div>
                   </div>
                   <div className="text-right">
@@ -133,7 +168,7 @@ const AssetList: React.FC = () => {
 
           {/* Gadgets */}
           {(activeTab === 'All' || activeTab === 'Gadget') && gadgets.map(g => (
-              <div key={g.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+              <div key={g.id} onClick={() => navigate(`config-gadget`, { state: { editId: g.id } })} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:scale-[0.98]">
                   <div className="flex gap-4">
                       <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600">
                           <Camera size={24} />
@@ -141,9 +176,12 @@ const AssetList: React.FC = () => {
                       <div>
                           <h3 className="font-bold text-gray-900">{g.name}</h3>
                           <p className="text-xs text-gray-500">{g.brand} {g.model}</p>
-                          <span className={`text-[10px] px-2 py-0.5 rounded font-bold mt-1 inline-block ${g.status === 'rented' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'}`}>
-                              {g.status}
-                          </span>
+                          <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-[10px] px-2 py-0.5 rounded font-bold inline-block ${g.status === 'rented' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'}`}>
+                                  {g.status}
+                              </span>
+                              {g.booking_type === 'instant' && <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-[#ff4b9a]/10 text-[#ff4b9a] flex items-center gap-1"><Zap size={8}/> Instant</span>}
+                          </div>
                       </div>
                   </div>
                   <div className="text-right">
@@ -154,7 +192,7 @@ const AssetList: React.FC = () => {
           
           {/* Services */}
           {(activeTab === 'All' || activeTab === 'Service') && services.map(s => (
-              <div key={s.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+              <div key={s.id} onClick={() => navigate(`config-service`, { state: { editId: s.id } })} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:scale-[0.98]">
                   <div className="flex gap-4">
                       <div className="w-12 h-12 bg-pink-50 rounded-xl flex items-center justify-center text-pink-600">
                           <Briefcase size={24} />
@@ -353,7 +391,7 @@ const FlatConfig: React.FC = () => {
         building_id: buildingId,
         flat_no: '', floor_no: 1, bedrooms: 3, washrooms: 2, balconies: 2, size_sqft: 1200,
         monthly_rent: 0, service_charge: 0, gas_bill: 0, water_bill: 0, rent_type: 'Monthly',
-        is_vacant: true, amenities: [], facing: 'South', furnishing: 'Unfurnished', list_on_marketplace: false
+        is_vacant: true, amenities: [], facing: 'South', furnishing: 'Unfurnished', list_on_marketplace: false, booking_type: 'request'
     });
 
     useEffect(() => {
@@ -444,6 +482,9 @@ const FlatConfig: React.FC = () => {
                                 <InputGroup label="Water Bill"><input type="number" value={formData.water_bill} onChange={e => update('water_bill', parseInt(e.target.value))} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/></InputGroup>
                             </div>
                         </div>
+                        
+                        <BookingTypeSelector value={formData.booking_type} onChange={val => update('booking_type', val)} />
+
                         <div className="bg-pink-50 p-6 rounded-3xl border border-pink-100 flex justify-between items-center">
                             <div><h4 className="font-bold">List on Marketplace</h4><p className="text-xs text-gray-500">Post ad immediately</p></div>
                             <button onClick={() => update('list_on_marketplace', !formData.list_on_marketplace)} className={`w-12 h-7 rounded-full p-1 transition-colors ${formData.list_on_marketplace ? 'bg-[#ff4b9a]' : 'bg-gray-300'}`}><div className={`w-5 h-5 bg-white rounded-full transition-transform ${formData.list_on_marketplace ? 'translate-x-5' : ''}`}/></button>
@@ -462,20 +503,29 @@ const FlatConfig: React.FC = () => {
 // --- VEHICLE CONFIGURATION ---
 const VehicleConfig: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const editId = location.state?.editId;
     const [formData, setFormData] = useState<Partial<Vehicle>>({
-        name: '', type: 'Car', transmission: 'Auto', fuel_type: 'CNG', seats: 4, rates: { 'Daily': 3000 }, license_plate: '', model_year: '2019', color: ''
+        name: '', type: 'Car', transmission: 'Auto', fuel_type: 'CNG', seats: 4, rates: { 'Daily': 3000 }, license_plate: '', model_year: '2019', color: '', booking_type: 'request'
     });
+
+    useEffect(() => {
+        if(editId) {
+            const v = DataService.getVehicleById(editId);
+            if(v) setFormData(v);
+        }
+    }, [editId]);
 
     const handleSave = () => {
         if(formData.name && formData.license_plate) {
-            DataService.addVehicle({ ...formData, status: 'active', is_listed: true } as Vehicle);
+            editId ? DataService.updateVehicle(editId, formData) : DataService.addVehicle({ ...formData, status: 'active', is_listed: true } as Vehicle);
             navigate('/myspace/inventory');
         }
     };
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Header title="Add Vehicle" showBack />
+            <Header title={editId ? 'Edit Vehicle' : 'Add Vehicle'} showBack />
             <div className="flex-1 p-6 space-y-6 overflow-y-auto">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
                     <InputGroup label="Vehicle Name"><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" placeholder="e.g. Toyota Axio 2018"/></InputGroup>
@@ -515,9 +565,11 @@ const VehicleConfig: React.FC = () => {
                         <input type="number" value={formData.rates?.['Daily']} onChange={e => setFormData({...formData, rates: { ...formData.rates, 'Daily': parseInt(e.target.value) }})} className="w-full pl-8 p-4 bg-gray-50 rounded-xl font-bold text-xl outline-none"/>
                     </div>
                 </div>
+
+                <BookingTypeSelector value={formData.booking_type} onChange={val => setFormData({...formData, booking_type: val})} />
             </div>
             <div className="p-5 bg-white border-t border-gray-100 safe-bottom">
-                <button onClick={handleSave} className="w-full py-4 bg-[#2d1b4e] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Add Vehicle</button>
+                <button onClick={handleSave} className="w-full py-4 bg-[#2d1b4e] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Save Vehicle</button>
             </div>
         </div>
     );
@@ -526,20 +578,29 @@ const VehicleConfig: React.FC = () => {
 // --- GADGET CONFIGURATION ---
 const GadgetConfig: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const editId = location.state?.editId;
     const [formData, setFormData] = useState<Partial<Gadget>>({
-        name: '', category: 'Camera', brand: '', model: '', rates: { 'Daily': 500 }, security_deposit: 0, serial_no: ''
+        name: '', category: 'Camera', brand: '', model: '', rates: { 'Daily': 500 }, security_deposit: 0, serial_no: '', booking_type: 'request'
     });
+
+    useEffect(() => {
+        if(editId) {
+            const g = DataService.getGadgetById(editId);
+            if(g) setFormData(g);
+        }
+    }, [editId]);
 
     const handleSave = () => {
         if(formData.name) {
-            DataService.addGadget({ ...formData, status: 'active', is_listed: true } as Gadget);
+            editId ? DataService.updateGadget(editId, formData) : DataService.addGadget({ ...formData, status: 'active', is_listed: true } as Gadget);
             navigate('/myspace/inventory');
         }
     };
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Header title="Add Gadget" showBack />
+            <Header title={editId ? 'Edit Gadget' : 'Add Gadget'} showBack />
             <div className="flex-1 p-6 space-y-6 overflow-y-auto">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
                     <InputGroup label="Item Name"><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" placeholder="e.g. Sony A7III Kit"/></InputGroup>
@@ -566,9 +627,10 @@ const GadgetConfig: React.FC = () => {
                         </InputGroup>
                     </div>
                 </div>
+                <BookingTypeSelector value={formData.booking_type} onChange={val => setFormData({...formData, booking_type: val})} />
             </div>
             <div className="p-5 bg-white border-t border-gray-100 safe-bottom">
-                <button onClick={handleSave} className="w-full py-4 bg-[#2d1b4e] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Add Gadget</button>
+                <button onClick={handleSave} className="w-full py-4 bg-[#2d1b4e] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Save Gadget</button>
             </div>
         </div>
     );
@@ -577,20 +639,29 @@ const GadgetConfig: React.FC = () => {
 // --- SERVICE CONFIGURATION ---
 const ServiceConfig: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const editId = location.state?.editId;
     const [formData, setFormData] = useState<Partial<ServiceAsset>>({
-        name: '', category: 'Photographer', rates: { 'Daily': 2000 }, description: ''
+        name: '', category: 'Photographer', rates: { 'Daily': 2000 }, description: '', booking_type: 'request'
     });
+
+    useEffect(() => {
+        if(editId) {
+            const s = DataService.getServiceById(editId);
+            if(s) setFormData(s);
+        }
+    }, [editId]);
 
     const handleSave = () => {
         if(formData.name) {
-            DataService.addService({ ...formData, status: 'active', is_listed: true } as ServiceAsset);
+            editId ? DataService.updateService(editId, formData) : DataService.addService({ ...formData, status: 'active', is_listed: true } as ServiceAsset);
             navigate('/myspace/inventory');
         }
     };
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Header title="Add Service" showBack />
+            <Header title={editId ? 'Edit Service' : 'Add Service'} showBack />
             <div className="flex-1 p-6 space-y-6 overflow-y-auto">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
                     <InputGroup label="Service Title"><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" placeholder="e.g. Wedding Photography"/></InputGroup>
@@ -606,9 +677,10 @@ const ServiceConfig: React.FC = () => {
                         <input type="number" value={formData.rates?.['Daily']} onChange={e => setFormData({...formData, rates: { ...formData.rates, 'Daily': parseInt(e.target.value) }})} className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none"/>
                     </InputGroup>
                 </div>
+                <BookingTypeSelector value={formData.booking_type} onChange={val => setFormData({...formData, booking_type: val})} />
             </div>
             <div className="p-5 bg-white border-t border-gray-100 safe-bottom">
-                <button onClick={handleSave} className="w-full py-4 bg-[#2d1b4e] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">List Service</button>
+                <button onClick={handleSave} className="w-full py-4 bg-[#2d1b4e] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Save Service</button>
             </div>
         </div>
     );

@@ -28,6 +28,7 @@ export interface BaseAsset {
   images?: string[];   // URLs for marketplace
   listing_description?: string;
   hide_contact?: boolean; // Privacy setting
+  booking_type?: 'instant' | 'request'; // New: Defines booking flow
 }
 
 export interface Building extends BaseAsset {
@@ -204,11 +205,17 @@ export interface Tenant {
   };
 }
 
+export interface BillCharge {
+  name: string;
+  amount: number;
+  note?: string;
+}
+
 export interface Bill {
   id: string;
   tenant_id: string;
   asset_type: AssetType;
-  month: string;
+  month: string; // ISO String Date
   rent_amount: number;
   
   // Residential/Commercial Charges
@@ -229,13 +236,20 @@ export interface Bill {
   // Generic
   other_bills?: number;
   additional_charges_amount: number;
+  
+  // Dynamic Charges
+  extra_charges?: BillCharge[];
+  
   total: number;
+  paid_amount?: number; // Support partial payment tracking
   status: 'unpaid' | 'paid' | 'partial';
   created_at: string;
   tenant_name?: string;
   asset_name?: string;
   asset_sub?: string;
   paid_date?: string;
+  paid_method?: string; // Cash, bKash, etc.
+  paid_note?: string;
 }
 
 export interface Payment {
