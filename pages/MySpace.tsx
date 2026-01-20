@@ -20,7 +20,9 @@ const MySpace: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('bhara_role', role);
-    if (!location.pathname.includes('/overview')) {
+    // Basic route protection/redirection based on role could go here, 
+    // but for now we just let the Routes render the correct component or redirect in useEffect
+    if (!location.pathname.startsWith('/myspace')) {
         navigate('/myspace/overview');
     }
   }, [role]);
@@ -45,15 +47,15 @@ const MySpace: React.FC = () => {
     <div className="flex flex-col h-full bg-gray-50">
       {/* 
           Sub-Header Configuration:
-          - Sticky top-0 because the scroll container (main) is already offset by the Layout header height.
-          - Z-Index: 40 to slide under the main navigation (z-100) if needed, or sit nicely below it.
+          - Sticky top-0
+          - Adjusted alignment: center on mobile, spread on desktop
       */}
       <header className="bg-white/95 backdrop-blur-md sticky top-0 z-40 shadow-sm border-b border-gray-200 transition-all duration-300">
         <div className="max-w-7xl mx-auto w-full">
-            <div className="px-5 md:px-8 pt-4 pb-0 flex flex-col md:flex-row md:items-center justify-between gap-4 h-auto md:h-[60px]">
+            <div className="px-5 md:px-8 pt-4 flex flex-col md:flex-row md:items-end justify-between gap-4 md:h-[64px]">
                 
                 {/* Top Row: Logo/Title + Role Switcher */}
-                <div className="flex items-center justify-between md:justify-start gap-6 pb-3 md:pb-0">
+                <div className="flex items-center justify-between md:justify-start gap-6 pb-2 md:pb-4 w-full md:w-auto">
                     <div className="flex items-center gap-3">
                         <div className="md:hidden">
                             <Logo size="sm" />
@@ -79,14 +81,14 @@ const MySpace: React.FC = () => {
                 </div>
 
                 {/* Bottom Row: Navigation Tabs */}
-                <div className="flex gap-6 overflow-x-auto scrollbar-hide pt-1 self-end">
+                <div className="flex gap-6 overflow-x-auto scrollbar-hide w-full md:w-auto md:justify-end">
                     {currentTabs.map((tab) => {
                         const isActive = location.pathname.startsWith(tab.path);
                         return (
                         <NavLink
                             key={tab.label}
                             to={tab.path}
-                            className={`pb-3 text-sm font-bold transition-all border-b-[3px] whitespace-nowrap px-1 ${
+                            className={`pb-3 md:pb-4 text-sm font-bold transition-all border-b-[3px] whitespace-nowrap px-1 ${
                             isActive ? 'text-[#ff4b9a] border-[#ff4b9a]' : 'text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-200'
                             }`}
                         >

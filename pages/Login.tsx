@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ChevronLeft } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Logo } from '../components/Logo';
 
@@ -27,6 +27,14 @@ const Login: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-white relative overflow-hidden">
       <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-purple-100/50 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-pink-100/50 rounded-full blur-3xl pointer-events-none"></div>
+
+      {/* Back Button */}
+      <button 
+        onClick={() => navigate(-1)} 
+        className="absolute top-6 left-6 p-2 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors z-20 shadow-sm border border-gray-100"
+      >
+        <ChevronLeft size={24} />
+      </button>
 
       <div className="w-full max-w-[380px] p-8 flex flex-col z-10">
         <div className="mb-10 text-center flex flex-col items-center">
