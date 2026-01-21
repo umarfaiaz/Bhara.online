@@ -30,13 +30,13 @@ let buildings: Building[] = [
     address: 'Sector 4, Road 12, House 45',
     holding_no: '45',
     road_no: '12',
-    total_floors: 6, // Added
+    total_floors: 6,
     created_at: new Date().toISOString(),
     flat_count: 12,
     occupied_count: 1,
     amenities: ['CCTV', 'Gas', 'Guard', 'Lift', 'Generator'],
     is_listed: true,
-    hide_exact_address: false, // Updated key
+    hide_exact_address: false,
     images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=80&w=800'],
     listing_description: 'Modern residential building with all amenities in the heart of Uttara.',
     additional_charges: []
@@ -58,7 +58,7 @@ let vehicles: Vehicle[] = [
       'Monthly': 45000
     },
     status: 'rented',
-    booking_type: 'instant', // Instant Booking
+    booking_type: 'instant',
     created_at: new Date().toISOString(),
     is_listed: true,
     images: ['https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800'],
@@ -72,9 +72,9 @@ let vehicles: Vehicle[] = [
     type: 'Bike',
     rates: { 'Daily': 1000 },
     status: 'active',
-    booking_type: 'request', // Request Booking
+    booking_type: 'request',
     created_at: new Date().toISOString(),
-    is_listed: false, // Unlisted
+    is_listed: false,
     images: ['https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&q=80&w=800'],
     additional_charges: []
   }
@@ -160,9 +160,9 @@ let flats: Flat[] = [
     has_gas: true,
     rent_type: 'Monthly',
     monthly_rent: 25000,
-    service_charge: 3000, // Added
-    water_bill: 500, // Added
-    gas_bill: 800, // Added
+    service_charge: 3000,
+    water_bill: 500,
+    gas_bill: 800,
     electricity_bill: 0, 
     is_vacant: false,
     created_at: new Date().toISOString(),
@@ -186,9 +186,9 @@ let flats: Flat[] = [
     has_gas: true,
     rent_type: 'Monthly',
     monthly_rent: 26000,
-    service_charge: 3000, // Added
-    water_bill: 500, // Added
-    gas_bill: 800, // Added
+    service_charge: 3000,
+    water_bill: 500,
+    gas_bill: 800,
     electricity_bill: 0,
     is_vacant: true,
     created_at: new Date().toISOString(),
@@ -250,7 +250,6 @@ let tenants: Tenant[] = [
   }
 ];
 
-// Helper to generate past dates
 const getDateMonthsAgo = (months: number) => {
     const d = new Date();
     d.setMonth(d.getMonth() - months);
@@ -258,12 +257,11 @@ const getDateMonthsAgo = (months: number) => {
 };
 
 let bills: Bill[] = [
-  // Current Month
   {
     id: 'bill_1',
     tenant_id: 't1',
     asset_type: 'Residential',
-    month: new Date().toISOString(), // Current Month
+    month: new Date().toISOString(),
     rent_amount: 25000,
     service_charge: 3000,
     water_bill: 500,
@@ -299,7 +297,6 @@ let bills: Bill[] = [
       asset_sub: 'Car Rental',
       paid_date: new Date().toISOString()
   },
-  // Last Month (Paid)
   {
     id: 'bill_1_prev',
     tenant_id: 't1',
@@ -321,7 +318,6 @@ let bills: Bill[] = [
     asset_sub: 'Ragib Villa',
     paid_date: getDateMonthsAgo(1)
   },
-  // 2 Months Ago (Paid)
   {
     id: 'bill_1_prev2',
     tenant_id: 't1',
@@ -385,7 +381,7 @@ let chatSessions: ChatSession[] = [
             chatId: 'c1',
             senderId: 't1',
             text: 'I have transferred the rent. Please check.',
-            timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
+            timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
             type: 'text',
             status: 'delivered'
         },
@@ -407,7 +403,7 @@ let chatSessions: ChatSession[] = [
             chatId: 'g1',
             senderId: 'u1',
             text: 'Notice: Generator maintenance tomorrow at 10 AM.',
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
             type: 'system',
             status: 'read'
         },
@@ -505,8 +501,6 @@ export const ChatService = {
             status: 'sent'
         };
         messages.push(newMessage);
-        
-        // Update session
         const session = chatSessions.find(c => c.id === chatId);
         if(session) {
             session.lastMessage = newMessage;
@@ -515,7 +509,6 @@ export const ChatService = {
         return newMessage;
     },
     startChat: (participantId: string, initialMessage: string) => {
-        // Check if chat exists
         let chat = chatSessions.find(c => c.type === 'direct' && c.participants.some(p => p.id === participantId));
         if (!chat) {
             chat = {
@@ -523,7 +516,6 @@ export const ChatService = {
                 type: 'direct',
                 participants: [
                     { id: 'u1', name: 'Umar Faiaz Moon', avatar: 'https://i.pravatar.cc/150?u=u1' },
-                    // In real app, fetch other user details. Here we mock:
                     { id: participantId, name: 'Lender/Renter', avatar: `https://i.pravatar.cc/150?u=${participantId}` }
                 ],
                 unreadCount: 0,
@@ -619,24 +611,21 @@ export const DataService = {
   },
 
   getMarketplaceItems: (userId?: string, includeUnlisted: boolean = false) => {
-      // Helper to check listing status
       const isVisible = (item: any) => {
           if (userId && item.user_id !== userId) return false;
           return includeUnlisted ? true : item.is_listed;
       };
 
-      // 1. Buildings (as parent assets, might not be rented directly but flats are)
       const _buildings = buildings.filter(b => isVisible(b)).map(b => ({ 
           ...b, 
           assetType: 'Residential', 
-          realType: 'Residential', // For toggle logic
+          realType: 'Residential',
           category: 'Real Estate', 
           displayPrice: 'Contact for Price',
           location: `${b.area}, ${b.city}`,
           period: 'Sale/Rent'
       }));
       
-      // 2. Flats (Main Real Estate Items)
       const _flats = flats.filter(f => {
           const b = buildings.find(b => b.id === f.building_id);
           const ownerId = b?.user_id || 'u1';
@@ -648,7 +637,7 @@ export const DataService = {
               ...f, 
               user_id: b?.user_id || 'u1', 
               assetType: 'Residential',
-              realType: 'Flat', // For toggle logic
+              realType: 'Flat',
               category: 'Real Estate', 
               name: `Flat ${f.flat_no} at ${b?.name}`, 
               location: `${b?.area}, ${b?.city}`, 
@@ -662,7 +651,6 @@ export const DataService = {
           };
       });
 
-      // 3. Vehicles
       const _vehicles = vehicles.filter(v => isVisible(v)).map(v => ({ 
           ...v, 
           assetType: 'Vehicle',
@@ -670,7 +658,7 @@ export const DataService = {
           category: 'Vehicles', 
           displayPrice: `৳${v.rates['Daily'] || v.rates['Monthly']}`,
           period: v.rates['Daily'] ? '/day' : '/mo',
-          location: 'Dhaka', // Default location
+          location: 'Dhaka', 
           details: {
               transmission: v.transmission,
               fuel: v.fuel_type,
@@ -678,22 +666,20 @@ export const DataService = {
           }
       }));
 
-      // 4. Gadgets
       const _gadgets = gadgets.filter(g => isVisible(g)).map(g => ({ 
           ...g, 
           assetType: 'Gadget',
           realType: 'Gadget',
-          category: g.category || 'Tech', // Updated to use category
+          category: g.category || 'Tech', 
           displayPrice: `৳${g.rates['Daily']}`,
           period: '/day',
-          location: 'Dhaka', // Default location
+          location: 'Dhaka', 
           details: {
               brand: g.brand,
               model: g.model
           }
       }));
 
-      // 5. Services
       const _services = services.filter(s => isVisible(s)).map(s => {
           let cat = 'Services';
           if(s.type === 'Event Space') cat = 'Events';
@@ -712,7 +698,6 @@ export const DataService = {
   },
 
   getRecommendations: (currentItemId: string) => {
-      // Mock logic: return random 3 items that are NOT the current item
       const all = DataService.getMarketplaceItems();
       const current = all.find(i => i.id === currentItemId);
       if (!current) return [];
@@ -739,7 +724,6 @@ export const DataService = {
   getBuildings: () => buildings,
   getBuildingById: (id: string) => buildings.find(b => b.id === id),
   addBuilding: (b: Building) => {
-      // Ensure user_id is set
       const newB = { ...b, user_id: currentUser.id, id: `b${Date.now()}`, created_at: new Date().toISOString() };
       buildings.push(newB);
       return newB;
@@ -750,56 +734,44 @@ export const DataService = {
 
   getFlats: (buildingId?: string) => buildingId ? flats.filter(f => f.building_id === buildingId) : flats,
   getFlatById: (id: string) => flats.find(f => f.id === id),
-  
-  // CHANGED: Returns object
   addFlat: (f: Partial<Flat>) => {
       const newF = { ...f, id: `f${Date.now()}`, is_vacant: true, created_at: new Date().toISOString(), booking_type: 'request' } as Flat;
       flats.push(newF);
       return newF;
   },
-  
   updateFlat: (id: string, data: Partial<Flat>) => {
       flats = flats.map(f => f.id === id ? { ...f, ...data } : f);
   },
 
   getVehicles: () => vehicles,
   getVehicleById: (id: string) => vehicles.find(v => v.id === id),
-  
-  // CHANGED: Returns object
   addVehicle: (v: Vehicle) => {
       const newV = { ...v, user_id: currentUser.id, id: `v${Date.now()}`, created_at: new Date().toISOString(), booking_type: 'request' } as Vehicle;
       vehicles.push(newV);
       return newV;
   },
-  
   updateVehicle: (id: string, data: Partial<Vehicle>) => {
       vehicles = vehicles.map(v => v.id === id ? { ...v, ...data } : v);
   },
 
   getGadgets: () => gadgets,
   getGadgetById: (id: string) => gadgets.find(g => g.id === id),
-  
-  // CHANGED: Returns object
   addGadget: (g: Gadget) => {
       const newG = { ...g, user_id: currentUser.id, id: `g${Date.now()}`, created_at: new Date().toISOString(), booking_type: 'request' } as Gadget;
       gadgets.push(newG);
       return newG;
   },
-  
   updateGadget: (id: string, data: Partial<Gadget>) => {
       gadgets = gadgets.map(g => g.id === id ? { ...g, ...data } : g);
   },
 
   getServices: () => services,
   getServiceById: (id: string) => services.find(s => s.id === id),
-  
-  // CHANGED: Returns object
   addService: (s: ServiceAsset) => {
       const newS = { ...s, user_id: currentUser.id, id: `s${Date.now()}`, created_at: new Date().toISOString(), booking_type: 'request' } as ServiceAsset;
       services.push(newS);
       return newS;
   },
-  
   updateService: (id: string, data: Partial<ServiceAsset>) => {
       services = services.map(s => s.id === id ? { ...s, ...data } : s);
   },
@@ -921,12 +893,10 @@ export const DataService = {
           if (b.id === id) {
               const updated = { ...b, ...data };
               
-              // Recalculate total if charges change
               const base = (updated.rent_amount || 0) + (updated.service_charge || 0) + (updated.water_bill || 0) + (updated.gas_bill || 0);
               const extras = (updated.electricity_bill || 0) + (updated.other_bills || 0) + (updated.additional_charges_amount || 0);
               const variable = (updated.fuel_cost || 0) + (updated.driver_allowance || 0) + (updated.toll_cost || 0) + (updated.damage_cost || 0) + (updated.late_fee || 0);
               
-              // New Logic: Sum extra_charges
               const dynamicExtras = updated.extra_charges?.reduce((acc, curr) => acc + curr.amount, 0) || 0;
 
               updated.total = base + extras + variable + dynamicExtras;
@@ -947,10 +917,7 @@ export const DataService = {
       } as MaintenanceRequest);
   },
 
-  // Simulate notification to owner (In real app, this would be a backend push)
   notifyOwner: (userId: string, title: string, message: string) => {
-      // For mock purposes, we log this. In a full implementation, 
-      // this would push to the user's notification stream or trigger a push notification.
       console.log(`[NOTIFICATION to ${userId}]: ${title} - ${message}`);
       return true;
   }

@@ -219,6 +219,7 @@ export interface BillCharge {
   name: string;
   amount: number;
   note?: string;
+  type?: string;
 }
 
 export interface Bill {

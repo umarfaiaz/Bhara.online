@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Plus, MapPin, Building2, Store, Briefcase, Users, Car, Camera, ChevronRight, ChevronLeft, Minus, Trash2, AlertTriangle, MoreHorizontal, ArrowLeft, Home, Layers, CheckCircle2, LayoutGrid, DollarSign, BedDouble, Bath, Wind, Utensils, Armchair, Flame, Upload, UserPlus, Calendar, Send, Settings, PenTool, Zap, Shield, Warehouse, Bus, Truck, Bike, Ship, Edit3, X, User, Phone, Wifi, Video, Lock, Info, Compass, Droplets, Mic2, Star, CheckSquare, Tv, Grid, Fuel, Settings2, Monitor, Gamepad, Headphones, Music, FileText, Link, MousePointerClick, MessageSquare, Globe, ToggleLeft, ToggleRight, List, ListPlus, Mail, MessageCircle, Hammer, Shirt, BookOpen, Eye, EyeOff, Image as ImageIcon } from 'lucide-react';
+import { Plus, MapPin, Building2, Car, Camera, ChevronRight, ChevronLeft, Layers, CheckCircle2, LayoutGrid, DollarSign, BedDouble, Bath, Globe, MessageCircle, Home, Image as ImageIcon, X, User } from 'lucide-react';
 import { DataService } from '../../services/mockData';
-import { CITIES, AREAS, MARKETPLACE_CATEGORIES, RENT_TYPES } from '../../constants';
-import { Building, Flat, Tenant, AssetType, Vehicle, Gadget, RentCycle, ServiceAsset, BaseAsset } from '../../types';
+import { CITIES, AREAS } from '../../constants';
+import { Building, Flat, AssetType, Vehicle, Gadget, ServiceAsset, BaseAsset } from '../../types';
 
 // --- Reusable UI Components ---
 
@@ -55,8 +55,6 @@ const SectionHeading: React.FC<{ title: string, icon?: any }> = ({ title, icon: 
 );
 
 // --- LISTING EDITOR (MARKETING LAYER) ---
-// This is SEPARATE from Inventory Configuration.
-// It creates the "Public Face" of the asset.
 
 const ListingEditor: React.FC = () => {
     const navigate = useNavigate();
@@ -71,14 +69,12 @@ const ListingEditor: React.FC = () => {
     else if (type === 'Flat') internalItem = DataService.getFlatById(assetId);
     else if (type === 'Building') internalItem = DataService.getBuildingById(assetId);
 
-    // If no item, redirect back
     useEffect(() => {
         if(!internalItem) navigate('/myspace/inventory');
     }, [internalItem]);
 
     if (!internalItem) return null;
 
-    // Listing State (Defaults to internal values if Listing values not present)
     const [title, setTitle] = useState(internalItem.listing_title || internalItem.name || (type === 'Flat' ? `Flat ${internalItem.flat_no}` : ''));
     const [desc, setDesc] = useState(internalItem.listing_description || '');
     const [price, setPrice] = useState(internalItem.listing_price || internalItem.monthly_rent || internalItem.rates?.['Daily'] || 0);
@@ -96,17 +92,22 @@ const ListingEditor: React.FC = () => {
             is_listed: status
         };
 
-        // Update the specific asset type
         if (type === 'Flat') DataService.updateFlat(assetId, updatedData);
         else if (type === 'Vehicle') DataService.updateVehicle(assetId, updatedData);
         else if (type === 'Gadget') DataService.updateGadget(assetId, updatedData);
         else if (type === 'Service') DataService.updateService(assetId, updatedData);
         else if (type === 'Residential') DataService.updateBuilding(assetId, updatedData);
 
-        // Update the global list status helper
         DataService.toggleListing(assetId, type, status);
-        
         navigate(returnTo || '/myspace/listings');
+    };
+
+    const toggleContactPref = (method: 'chat' | 'phone' | 'email') => {
+        if (contactPrefs?.includes(method)) {
+            setContactPrefs(contactPrefs.filter(c => c !== method));
+        } else {
+            setContactPrefs([...(contactPrefs || []), method]);
+        }
     };
 
     return (
@@ -120,7 +121,6 @@ const ListingEditor: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-                
                 {/* Preview Banner */}
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-start gap-4">
                     <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center border border-gray-200 text-gray-300">
@@ -135,7 +135,6 @@ const ListingEditor: React.FC = () => {
 
                 <div className="space-y-5">
                     <SectionHeading title="Public Display Info" icon={Globe} />
-                    
                     <InputGroup label="Listing Title">
                         <input 
                             type="text" 
@@ -183,16 +182,12 @@ const ListingEditor: React.FC = () => {
                 <div className="space-y-5">
                     <SectionHeading title="Communication" icon={MessageCircle} />
                     <p className="text-xs text-gray-500 -mt-3 mb-2">How should interested customers reach you?</p>
-                    
                     <div className="flex gap-2">
-                        {['chat', 'phone', 'email'].map(method => (
+                        {(['chat', 'phone', 'email'] as const).map(method => (
                             <button
                                 key={method}
-                                onClick={() => {
-                                    if(contactPrefs?.includes(method as any)) setContactPrefs(contactPrefs.filter(c => c !== method));
-                                    else setContactPrefs([...(contactPrefs || []), method as any]);
-                                }}
-                                className={`flex-1 py-3 rounded-xl border text-xs font-bold capitalize transition-all ${contactPrefs?.includes(method as any) ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200'}`}
+                                onClick={() => toggleContactPref(method)}
+                                className={`flex-1 py-3 rounded-xl border text-xs font-bold capitalize transition-all ${contactPrefs?.includes(method) ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200'}`}
                             >
                                 {method}
                             </button>
@@ -229,12 +224,9 @@ const BuildingConfig: React.FC = () => {
     const handleSave = () => {
         if(formData.name && formData.area) {
             const newB = DataService.addBuilding(formData as Building);
-            
-            // Navigate logic
             if (nextAction === 'addFlat') {
                 navigate('/myspace/inventory/config-flat', { state: { buildingId: newB.id, returnTo } });
             } else if (isMarketplace) {
-                // If they came from marketplace flow, they likely want to list the whole building or a unit
                 navigate('/myspace/inventory/config-flat', { state: { buildingId: newB.id, returnTo, isMarketplace } });
             } else {
                 navigate(returnTo || '/myspace/inventory');
@@ -248,7 +240,6 @@ const BuildingConfig: React.FC = () => {
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <Header title="Add Building" subtitle="Internal Configuration" showBack onBack={() => navigate(-1)} />
             <div className="flex-1 p-6 space-y-8 overflow-y-auto">
-                
                 <div className="space-y-4">
                     <SectionHeading title="General Info" icon={Building2} />
                     <InputGroup label="Property Name">
@@ -332,7 +323,6 @@ const FlatConfig: React.FC = () => {
             else { newItem = DataService.addFlat({ ...formData, building_id: buildingId }); }
             
             if (isMarketplace) {
-                // If coming from marketplace flow, jump to Listing Editor now
                 navigate('/myspace/inventory/listing-editor', { state: { assetId: newItem.id, type: 'Flat', returnTo: '/marketplace' } });
             } else if (returnTo) {
                 navigate(returnTo, { state: { selectedNewId: newItem.id, type: 'Flat' } });
@@ -348,7 +338,6 @@ const FlatConfig: React.FC = () => {
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <Header title={editId ? `Edit Flat ${formData.flat_no}` : `Add New Unit`} subtitle="Internal Configuration" showBack onBack={() => navigate(-1)} />
             <div className="flex-1 p-6 space-y-8 overflow-y-auto">
-                
                 <div className="space-y-4">
                     <SectionHeading title="Unit Identification" icon={Home} />
                     <div className="grid grid-cols-2 gap-4">
@@ -369,7 +358,6 @@ const FlatConfig: React.FC = () => {
                 <div className="space-y-4">
                     <SectionHeading title="Financials & Presets" icon={DollarSign} />
                     <p className="text-[10px] text-gray-500 -mt-3 mb-2">These amounts will automatically appear on monthly bills.</p>
-                    
                     <div className="grid grid-cols-2 gap-4">
                         <InputGroup label="Base Rent">
                             <div className="relative">
@@ -384,7 +372,6 @@ const FlatConfig: React.FC = () => {
                             </div>
                         </InputGroup>
                     </div>
-
                     <div className="grid grid-cols-2 gap-4">
                         <InputGroup label="Water Bill (Fixed)">
                             <div className="relative">
@@ -409,9 +396,6 @@ const FlatConfig: React.FC = () => {
         </div>
     );
 };
-
-// ... Vehicle and Gadget Configs would follow similar refactoring but simplified for brevity in this answer ...
-// I will keep existing logic for them but route correctly.
 
 const VehicleConfig: React.FC = () => {
     const navigate = useNavigate();
@@ -455,7 +439,6 @@ const VehicleConfig: React.FC = () => {
                         <InputGroup label="Transmission"><select value={formData.transmission} onChange={e => setFormData({...formData, transmission: e.target.value as any})} className="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 font-bold outline-none"><option>Auto</option><option>Manual</option></select></InputGroup>
                     </div>
                 </div>
-                {/* Simplified pricing for internal tracking */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
                     <h3 className="font-bold text-gray-900">Standard Rates</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -580,13 +563,6 @@ const AssetList: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'All' | 'Listed' | 'Property' | 'Vehicle' | 'Gadget' | 'Service'>('All');
 
-  const refreshData = () => {
-      setBuildings([...DataService.getBuildings()]);
-      setVehicles([...DataService.getVehicles()]);
-      setGadgets([...DataService.getGadgets()]);
-      setServices([...DataService.getServices()]);
-  };
-
   const isListedFilter = activeTab === 'Listed';
 
   return (
@@ -662,8 +638,6 @@ const AssetList: React.FC = () => {
                   </button>
               </div>
           ))}
-
-          {/* ... Gadgets and Services follow the same pattern ... */}
           
       </div>
     </div>
