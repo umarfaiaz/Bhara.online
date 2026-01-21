@@ -34,11 +34,11 @@ export interface BaseAsset {
   listing_title?: string;
   listing_description?: string;
   listing_price?: number; // Might differ from internal rent
-  hide_exact_address?: boolean; // New: Privacy control
+  hide_exact_address?: boolean; // Privacy control
   contact_preferences?: ('phone' | 'email' | 'chat')[]; 
   booking_type?: 'instant' | 'request'; 
   
-  // Internal Dynamic Charges
+  // Internal Dynamic Charges (Optional extras like 'Guard Bill')
   additional_charges?: { 
     id: string;
     name: string; 

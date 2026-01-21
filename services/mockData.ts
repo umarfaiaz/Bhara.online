@@ -1,5 +1,4 @@
 
-
 import { Building, Flat, Tenant, Bill, Vehicle, Gadget, ServiceAsset, AssetType, User, MaintenanceRequest, ChatSession, ChatMessage } from '../types';
 
 // Mock User
@@ -31,15 +30,16 @@ let buildings: Building[] = [
     address: 'Sector 4, Road 12, House 45',
     holding_no: '45',
     road_no: '12',
-    total_floors: 6,
+    total_floors: 6, // Added
     created_at: new Date().toISOString(),
     flat_count: 12,
     occupied_count: 1,
     amenities: ['CCTV', 'Gas', 'Guard', 'Lift', 'Generator'],
     is_listed: true,
-    hide_exact_address: false,
+    hide_exact_address: false, // Updated key
     images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=80&w=800'],
-    listing_description: 'Modern residential building with all amenities in the heart of Uttara.'
+    listing_description: 'Modern residential building with all amenities in the heart of Uttara.',
+    additional_charges: []
   }
 ];
 
@@ -61,7 +61,8 @@ let vehicles: Vehicle[] = [
     booking_type: 'instant', // Instant Booking
     created_at: new Date().toISOString(),
     is_listed: true,
-    images: ['https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800']
+    images: ['https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800'],
+    additional_charges: []
   },
   {
     id: 'v2',
@@ -74,7 +75,8 @@ let vehicles: Vehicle[] = [
     booking_type: 'request', // Request Booking
     created_at: new Date().toISOString(),
     is_listed: false, // Unlisted
-    images: ['https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&q=80&w=800']
+    images: ['https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&q=80&w=800'],
+    additional_charges: []
   }
 ];
 
@@ -96,7 +98,8 @@ let gadgets: Gadget[] = [
         booking_type: 'instant',
         created_at: new Date().toISOString(),
         is_listed: true,
-        images: ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=800']
+        images: ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=800'],
+        additional_charges: []
     }
 ];
 
@@ -117,7 +120,8 @@ let services: ServiceAsset[] = [
     booking_type: 'request',
     created_at: new Date().toISOString(),
     is_listed: true,
-    images: ['https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80&w=800']
+    images: ['https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80&w=800'],
+    additional_charges: []
   },
   {
     id: 's2',
@@ -135,7 +139,8 @@ let services: ServiceAsset[] = [
     created_at: new Date().toISOString(),
     is_listed: true,
     hide_exact_address: true,
-    images: ['https://images.unsplash.com/photo-1554048612-387768052bf7?auto=format&fit=crop&q=80&w=800']
+    images: ['https://images.unsplash.com/photo-1554048612-387768052bf7?auto=format&fit=crop&q=80&w=800'],
+    additional_charges: []
   }
 ];
 
@@ -155,15 +160,16 @@ let flats: Flat[] = [
     has_gas: true,
     rent_type: 'Monthly',
     monthly_rent: 25000,
-    service_charge: 3000,
-    water_bill: 500,
-    gas_bill: 800,
+    service_charge: 3000, // Added
+    water_bill: 500, // Added
+    gas_bill: 800, // Added
     electricity_bill: 0, 
     is_vacant: false,
     created_at: new Date().toISOString(),
     tenant_id: 't1',
     is_listed: false,
-    booking_type: 'request'
+    booking_type: 'request',
+    additional_charges: []
   },
   {
     id: 'f2',
@@ -180,14 +186,16 @@ let flats: Flat[] = [
     has_gas: true,
     rent_type: 'Monthly',
     monthly_rent: 26000,
-    service_charge: 3000,
-    water_bill: 500,
-    gas_bill: 800,
+    service_charge: 3000, // Added
+    water_bill: 500, // Added
+    gas_bill: 800, // Added
+    electricity_bill: 0,
     is_vacant: true,
     created_at: new Date().toISOString(),
     is_listed: true,
     booking_type: 'request',
-    images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=800']
+    images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=800'],
+    additional_charges: []
   }
 ];
 
