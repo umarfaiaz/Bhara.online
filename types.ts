@@ -18,6 +18,9 @@ export interface User {
   subscriptionRenewalDate?: string;
   smsBalance: number;
   joinDate: string;
+  
+  // Saved Items
+  wishlist?: string[];
 }
 
 export type AssetType = 'Residential' | 'Commercial' | 'Shared' | 'Vehicle' | 'Gadget' | 'Event Space' | 'Professional' | 'Service';
@@ -26,9 +29,22 @@ export type RentCycle = 'Hourly' | 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
 export interface BaseAsset {
   is_listed?: boolean; // If true, shows in marketplace
   images?: string[];   // URLs for marketplace
+  
+  // Listing Specifics (The Marketing Layer)
+  listing_title?: string;
   listing_description?: string;
-  hide_contact?: boolean; // Privacy setting
-  booking_type?: 'instant' | 'request'; // New: Defines booking flow
+  listing_price?: number; // Might differ from internal rent
+  hide_exact_address?: boolean; // New: Privacy control
+  contact_preferences?: ('phone' | 'email' | 'chat')[]; 
+  booking_type?: 'instant' | 'request'; 
+  
+  // Internal Dynamic Charges
+  additional_charges?: { 
+    id: string;
+    name: string; 
+    amount: number; 
+    type: 'One-time' | 'Recurring';
+  }[]; 
 }
 
 export interface Building extends BaseAsset {
@@ -36,19 +52,23 @@ export interface Building extends BaseAsset {
   user_id: string;
   name: string;
   type: AssetType;
+  
+  // Location Details
   city: string;
   area: string;
-  address: string;
-  // Detailed Address
+  address: string; // Full address
   holding_no?: string;
   road_no?: string;
   zip_code?: string;
-  // Management
+  
+  // Structure & Management
+  total_floors: number;
   caretaker_name?: string;
   caretaker_phone?: string;
-  // Facilities
-  floors: number;
+  
+  // Facilities (Internal reference)
   amenities?: string[]; // e.g. ['Lift', 'Generator', 'CCTV', 'WiFi', 'Guard']
+  
   created_at: string;
   flat_count?: number;
   occupied_count?: number;
@@ -58,7 +78,7 @@ export interface Vehicle extends BaseAsset {
   id: string;
   user_id: string;
   name: string;
-  license_plate: string;
+  license_plate: string; // Internal tracking
   type: string;
   transmission?: 'Auto' | 'Manual';
   fuel_type?: 'Petrol' | 'Diesel' | 'CNG' | 'Hybrid' | 'Electric';
@@ -77,7 +97,7 @@ export interface Gadget extends BaseAsset {
   name: string;
   brand?: string;
   model?: string;
-  serial_no?: string;
+  serial_no?: string; // Internal tracking
   category: string;
   rates: Partial<Record<RentCycle, number>>;
   default_rent_cycle?: RentCycle;
@@ -89,14 +109,14 @@ export interface Gadget extends BaseAsset {
 export interface ServiceAsset extends BaseAsset {
   id: string;
   user_id: string;
-  name: string; // Name of person or service title
+  name: string; 
   type: 'Professional' | 'Service' | 'Event Space';
-  category: string; // e.g., 'Photographer', 'Band', 'Cleaning', 'Convention Hall'
+  category: string; 
   description?: string;
   location?: string;
   rates: Partial<Record<RentCycle, number>>;
   status: 'active' | 'rented' | 'unavailable';
-  availability?: string[]; // e.g., ['Weekends', 'Evenings']
+  availability?: string[]; 
   created_at: string;
 }
 
@@ -104,7 +124,7 @@ export interface Flat extends BaseAsset {
   id: string;
   building_id: string;
   floor_no: number;
-  flat_no: string;
+  flat_no: string; // Internal ID (e.g. 4A)
   size_sqft: number;
   
   // Attributes
@@ -131,23 +151,13 @@ export interface Flat extends BaseAsset {
 
   amenities?: string[];
 
-  // Shared Specific
-  bed_no?: string;
-  room_no?: string;
-  
-  // Utilities
-  meter_type?: 'Prepaid' | 'Postpaid';
-  meter_no?: string;
-
+  // Internal Financials (Presets for Billing)
   rent_type: RentCycle;
   monthly_rent: number; 
   service_charge: number;
   water_bill: number;
   gas_bill: number;
-  electricity_bill?: number;
-  other_bills?: number;
-  additional_charges_label?: string;
-  additional_charges_amount: number;
+  electricity_bill?: number; // Usually metered, but can have base
   
   is_vacant: boolean;
   created_at: string;

@@ -1,4 +1,5 @@
 
+
 import { Building, Flat, Tenant, Bill, Vehicle, Gadget, ServiceAsset, AssetType, User, MaintenanceRequest, ChatSession, ChatMessage } from '../types';
 
 // Mock User
@@ -14,11 +15,11 @@ let currentUser: User = {
     joinDate: '2023-01-15',
     subscriptionRenewalDate: '2023-12-15',
     address: 'Uttara, Dhaka',
-    avatar: 'https://i.pravatar.cc/150?u=u1'
+    avatar: 'https://i.pravatar.cc/150?u=u1',
+    wishlist: []
 };
 
-// ... (Keep existing Initial Data: buildings, vehicles, gadgets, services, flats, tenants, bills, maintenanceRequests as they are)
-// Initial Data (Condensed for brevity, assume previous data exists or is re-initialized here if full file replacement)
+// Initial Data
 let buildings: Building[] = [
   {
     id: 'b1',
@@ -30,13 +31,13 @@ let buildings: Building[] = [
     address: 'Sector 4, Road 12, House 45',
     holding_no: '45',
     road_no: '12',
-    floors: 6,
+    total_floors: 6,
     created_at: new Date().toISOString(),
     flat_count: 12,
     occupied_count: 1,
     amenities: ['CCTV', 'Gas', 'Guard', 'Lift', 'Generator'],
     is_listed: true,
-    hide_contact: false,
+    hide_exact_address: false,
     images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=80&w=800'],
     listing_description: 'Modern residential building with all amenities in the heart of Uttara.'
   }
@@ -133,7 +134,7 @@ let services: ServiceAsset[] = [
     booking_type: 'request',
     created_at: new Date().toISOString(),
     is_listed: true,
-    hide_contact: true,
+    hide_exact_address: true,
     images: ['https://images.unsplash.com/photo-1554048612-387768052bf7?auto=format&fit=crop&q=80&w=800']
   }
 ];
@@ -158,7 +159,6 @@ let flats: Flat[] = [
     water_bill: 500,
     gas_bill: 800,
     electricity_bill: 0, 
-    additional_charges_amount: 0,
     is_vacant: false,
     created_at: new Date().toISOString(),
     tenant_id: 't1',
@@ -183,7 +183,6 @@ let flats: Flat[] = [
     service_charge: 3000,
     water_bill: 500,
     gas_bill: 800,
-    additional_charges_amount: 0,
     is_vacant: true,
     created_at: new Date().toISOString(),
     is_listed: true,
@@ -192,7 +191,6 @@ let flats: Flat[] = [
   }
 ];
 
-// ... (Keep other data: tenants, bills, maintenanceRequests, chatSessions, messages)
 let tenants: Tenant[] = [
   {
     id: 't1',
@@ -244,7 +242,15 @@ let tenants: Tenant[] = [
   }
 ];
 
+// Helper to generate past dates
+const getDateMonthsAgo = (months: number) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - months);
+    return d.toISOString();
+};
+
 let bills: Bill[] = [
+  // Current Month
   {
     id: 'bill_1',
     tenant_id: 't1',
@@ -284,6 +290,50 @@ let bills: Bill[] = [
       asset_name: 'Toyota Corolla',
       asset_sub: 'Car Rental',
       paid_date: new Date().toISOString()
+  },
+  // Last Month (Paid)
+  {
+    id: 'bill_1_prev',
+    tenant_id: 't1',
+    asset_type: 'Residential',
+    month: getDateMonthsAgo(1),
+    rent_amount: 25000,
+    service_charge: 3000,
+    water_bill: 500,
+    gas_bill: 800,
+    electricity_bill: 1100,
+    other_bills: 0,
+    additional_charges_amount: 0,
+    extra_charges: [],
+    total: 30400,
+    status: 'paid',
+    created_at: getDateMonthsAgo(1),
+    tenant_name: 'Mr. Rafiqul Islam',
+    asset_name: 'Flat 4A',
+    asset_sub: 'Ragib Villa',
+    paid_date: getDateMonthsAgo(1)
+  },
+  // 2 Months Ago (Paid)
+  {
+    id: 'bill_1_prev2',
+    tenant_id: 't1',
+    asset_type: 'Residential',
+    month: getDateMonthsAgo(2),
+    rent_amount: 25000,
+    service_charge: 3000,
+    water_bill: 500,
+    gas_bill: 800,
+    electricity_bill: 1050,
+    other_bills: 0,
+    additional_charges_amount: 0,
+    extra_charges: [],
+    total: 30350,
+    status: 'paid',
+    created_at: getDateMonthsAgo(2),
+    tenant_name: 'Mr. Rafiqul Islam',
+    asset_name: 'Flat 4A',
+    asset_sub: 'Ragib Villa',
+    paid_date: getDateMonthsAgo(2)
   }
 ];
 
@@ -401,7 +451,6 @@ const getMyRentals = (userId: string = 't1') => {
     return tenants.filter(t => t.full_name === 'Mr. Rafiqul Islam'); 
 }
 
-// ... (Keep services: UserService, ChatService)
 export const UserService = {
     getCurrentUser: () => currentUser,
     updateUser: (data: Partial<User>) => {
@@ -420,7 +469,17 @@ export const UserService = {
         else date.setFullYear(date.getFullYear() + 1);
         currentUser.subscriptionRenewalDate = date.toISOString();
         return currentUser;
-    }
+    },
+    toggleWishlist: (itemId: string) => {
+        const list = currentUser.wishlist || [];
+        if (list.includes(itemId)) {
+            currentUser.wishlist = list.filter(id => id !== itemId);
+        } else {
+            currentUser.wishlist = [...list, itemId];
+        }
+        return currentUser.wishlist;
+    },
+    getWishlist: () => currentUser.wishlist || []
 };
 
 export const ChatService = {
@@ -551,24 +610,37 @@ export const DataService = {
     };
   },
 
-  getMarketplaceItems: () => {
+  getMarketplaceItems: (userId?: string, includeUnlisted: boolean = false) => {
+      // Helper to check listing status
+      const isVisible = (item: any) => {
+          if (userId && item.user_id !== userId) return false;
+          return includeUnlisted ? true : item.is_listed;
+      };
+
       // 1. Buildings (as parent assets, might not be rented directly but flats are)
-      const _buildings = buildings.filter(b => b.is_listed).map(b => ({ 
+      const _buildings = buildings.filter(b => isVisible(b)).map(b => ({ 
           ...b, 
           assetType: 'Residential', 
+          realType: 'Residential', // For toggle logic
           category: 'Real Estate', 
-          displayPrice: 'Contact for Price' 
+          displayPrice: 'Contact for Price',
+          location: `${b.area}, ${b.city}`,
+          period: 'Sale/Rent'
       }));
       
       // 2. Flats (Main Real Estate Items)
-      const _flats = flats.filter(f => f.is_listed).map(f => {
+      const _flats = flats.filter(f => {
           const b = buildings.find(b => b.id === f.building_id);
-          // Default user_id to u1 if not present for mock
           const ownerId = b?.user_id || 'u1';
+          if (userId && ownerId !== userId) return false;
+          return includeUnlisted ? true : f.is_listed;
+      }).map(f => {
+          const b = buildings.find(b => b.id === f.building_id);
           return { 
               ...f, 
-              user_id: ownerId, // Important for "My Listings"
+              user_id: b?.user_id || 'u1', 
               assetType: 'Residential',
+              realType: 'Flat', // For toggle logic
               category: 'Real Estate', 
               name: `Flat ${f.flat_no} at ${b?.name}`, 
               location: `${b?.area}, ${b?.city}`, 
@@ -583,12 +655,14 @@ export const DataService = {
       });
 
       // 3. Vehicles
-      const _vehicles = vehicles.filter(v => v.is_listed).map(v => ({ 
+      const _vehicles = vehicles.filter(v => isVisible(v)).map(v => ({ 
           ...v, 
           assetType: 'Vehicle',
+          realType: 'Vehicle',
           category: 'Vehicles', 
           displayPrice: `৳${v.rates['Daily'] || v.rates['Monthly']}`,
           period: v.rates['Daily'] ? '/day' : '/mo',
+          location: 'Dhaka', // Default location
           details: {
               transmission: v.transmission,
               fuel: v.fuel_type,
@@ -597,12 +671,14 @@ export const DataService = {
       }));
 
       // 4. Gadgets
-      const _gadgets = gadgets.filter(g => g.is_listed).map(g => ({ 
+      const _gadgets = gadgets.filter(g => isVisible(g)).map(g => ({ 
           ...g, 
           assetType: 'Gadget',
-          category: 'Tech', 
+          realType: 'Gadget',
+          category: g.category || 'Tech', // Updated to use category
           displayPrice: `৳${g.rates['Daily']}`,
           period: '/day',
+          location: 'Dhaka', // Default location
           details: {
               brand: g.brand,
               model: g.model
@@ -610,33 +686,45 @@ export const DataService = {
       }));
 
       // 5. Services
-      const _services = services.filter(s => s.is_listed).map(s => {
+      const _services = services.filter(s => isVisible(s)).map(s => {
           let cat = 'Services';
           if(s.type === 'Event Space') cat = 'Events';
           return { 
               ...s, 
               assetType: 'Service',
+              realType: 'Service',
               category: cat, 
               displayPrice: `৳${Object.values(s.rates)[0] || 0}`,
-              period: '/day'
+              period: '/day',
+              location: s.location || 'Dhaka'
           };
       });
 
       return [..._buildings, ..._flats, ..._vehicles, ..._gadgets, ..._services];
   },
 
-  // ... (Keep existing methods: toggleListing, getBuildings, addBuilding, updateBuilding, etc.)
+  getRecommendations: (currentItemId: string) => {
+      // Mock logic: return random 3 items that are NOT the current item
+      const all = DataService.getMarketplaceItems();
+      const current = all.find(i => i.id === currentItemId);
+      if (!current) return [];
+      
+      return all
+        .filter(i => i.id !== currentItemId && (i.category === current.category || i.assetType === current.assetType))
+        .slice(0, 4);
+  },
+
   toggleListing: (id: string, type: AssetType | 'Flat', isListed: boolean, hideContact: boolean = false) => {
       if (type === 'Residential' || type === 'Commercial' || type === 'Shared') {
-          const b = buildings.find(x => x.id === id); if(b) { b.is_listed = isListed; b.hide_contact = hideContact; }
+          const b = buildings.find(x => x.id === id); if(b) { b.is_listed = isListed; b.hide_exact_address = hideContact; }
       } else if (type === 'Flat') {
-          const f = flats.find(x => x.id === id); if(f) { f.is_listed = isListed; f.hide_contact = hideContact; }
+          const f = flats.find(x => x.id === id); if(f) { f.is_listed = isListed; f.hide_exact_address = hideContact; }
       } else if (type === 'Vehicle') {
-          const v = vehicles.find(x => x.id === id); if(v) { v.is_listed = isListed; v.hide_contact = hideContact; }
+          const v = vehicles.find(x => x.id === id); if(v) { v.is_listed = isListed; v.hide_exact_address = hideContact; }
       } else if (type === 'Gadget') {
-          const g = gadgets.find(x => x.id === id); if(g) { g.is_listed = isListed; g.hide_contact = hideContact; }
+          const g = gadgets.find(x => x.id === id); if(g) { g.is_listed = isListed; g.hide_exact_address = hideContact; }
       } else {
-          const s = services.find(x => x.id === id); if(s) { s.is_listed = isListed; s.hide_contact = hideContact; }
+          const s = services.find(x => x.id === id); if(s) { s.is_listed = isListed; s.hide_exact_address = hideContact; }
       }
   },
 
@@ -654,28 +742,56 @@ export const DataService = {
 
   getFlats: (buildingId?: string) => buildingId ? flats.filter(f => f.building_id === buildingId) : flats,
   getFlatById: (id: string) => flats.find(f => f.id === id),
-  addFlat: (f: Partial<Flat>) => flats.push({ ...f, id: `f${Date.now()}`, is_vacant: true, created_at: new Date().toISOString(), booking_type: 'request' } as Flat),
+  
+  // CHANGED: Returns object
+  addFlat: (f: Partial<Flat>) => {
+      const newF = { ...f, id: `f${Date.now()}`, is_vacant: true, created_at: new Date().toISOString(), booking_type: 'request' } as Flat;
+      flats.push(newF);
+      return newF;
+  },
+  
   updateFlat: (id: string, data: Partial<Flat>) => {
       flats = flats.map(f => f.id === id ? { ...f, ...data } : f);
   },
 
   getVehicles: () => vehicles,
   getVehicleById: (id: string) => vehicles.find(v => v.id === id),
-  addVehicle: (v: Vehicle) => vehicles.push({ ...v, user_id: currentUser.id, id: `v${Date.now()}`, created_at: new Date().toISOString(), booking_type: 'request' } as Vehicle),
+  
+  // CHANGED: Returns object
+  addVehicle: (v: Vehicle) => {
+      const newV = { ...v, user_id: currentUser.id, id: `v${Date.now()}`, created_at: new Date().toISOString(), booking_type: 'request' } as Vehicle;
+      vehicles.push(newV);
+      return newV;
+  },
+  
   updateVehicle: (id: string, data: Partial<Vehicle>) => {
       vehicles = vehicles.map(v => v.id === id ? { ...v, ...data } : v);
   },
 
   getGadgets: () => gadgets,
   getGadgetById: (id: string) => gadgets.find(g => g.id === id),
-  addGadget: (g: Gadget) => gadgets.push({ ...g, user_id: currentUser.id, id: `g${Date.now()}`, created_at: new Date().toISOString(), booking_type: 'request' } as Gadget),
+  
+  // CHANGED: Returns object
+  addGadget: (g: Gadget) => {
+      const newG = { ...g, user_id: currentUser.id, id: `g${Date.now()}`, created_at: new Date().toISOString(), booking_type: 'request' } as Gadget;
+      gadgets.push(newG);
+      return newG;
+  },
+  
   updateGadget: (id: string, data: Partial<Gadget>) => {
       gadgets = gadgets.map(g => g.id === id ? { ...g, ...data } : g);
   },
 
   getServices: () => services,
   getServiceById: (id: string) => services.find(s => s.id === id),
-  addService: (s: ServiceAsset) => services.push({ ...s, user_id: currentUser.id, id: `s${Date.now()}`, created_at: new Date().toISOString(), booking_type: 'request' } as ServiceAsset),
+  
+  // CHANGED: Returns object
+  addService: (s: ServiceAsset) => {
+      const newS = { ...s, user_id: currentUser.id, id: `s${Date.now()}`, created_at: new Date().toISOString(), booking_type: 'request' } as ServiceAsset;
+      services.push(newS);
+      return newS;
+  },
+  
   updateService: (id: string, data: Partial<ServiceAsset>) => {
       services = services.map(s => s.id === id ? { ...s, ...data } : s);
   },

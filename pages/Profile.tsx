@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { User, Phone, Crown, Edit2, Languages, Mail, MessageSquare, CreditCard, Clock, HelpCircle, AlertOctagon, FileText, Shield, ChevronRight, X, CheckCircle2, Zap, ArrowRight, LogOut } from 'lucide-react';
-import { UserService } from '../services/mockData';
+import { User, Phone, Crown, Edit2, Languages, Mail, MessageSquare, CreditCard, Clock, HelpCircle, AlertOctagon, FileText, Shield, ChevronRight, X, CheckCircle2, Zap, ArrowRight, LogOut, Heart, ShoppingBag, MapPin, Star } from 'lucide-react';
+import { UserService, DataService } from '../services/mockData';
 import { User as UserType } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useNavigate } from 'react-router-dom';
 
 interface ProfileProps {
     onLogout?: () => void;
@@ -13,6 +14,7 @@ const Profile: React.FC<ProfileProps> = ({ onLogout }) => {
   const [user, setUser] = useState<UserType>(UserService.getCurrentUser());
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const { language, setLanguage, t } = useLanguage();
+  const navigate = useNavigate();
 
   const toggleLanguage = () => {
       setLanguage(language === 'en' ? 'bn' : 'en');
@@ -37,6 +39,10 @@ const Profile: React.FC<ProfileProps> = ({ onLogout }) => {
 
   const renderPrivacy = () => (
       <LegalModal title="Privacy Policy" content="This is the privacy policy..." onClose={() => setActiveModal(null)} />
+  );
+
+  const renderWishlist = () => (
+      <WishlistModal onClose={() => setActiveModal(null)} />
   );
 
   return (
@@ -67,6 +73,7 @@ const Profile: React.FC<ProfileProps> = ({ onLogout }) => {
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">Account</h3>
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <MenuItem icon={Edit2} label={t('profile_edit')} onClick={() => setActiveModal('edit')} />
+                    <MenuItem icon={Heart} label="Saved Items" onClick={() => setActiveModal('wishlist')} />
                     <MenuItem icon={Languages} label={t('profile_lang')} value={language === 'bn' ? 'বাংলা' : 'English'} onClick={toggleLanguage} highlight />
                     <MenuItem icon={Mail} label={t('profile_contact')} onClick={() => window.open('mailto:support@bhara.online')} isLast />
                 </div>
@@ -115,6 +122,7 @@ const Profile: React.FC<ProfileProps> = ({ onLogout }) => {
         {activeModal === 'sms' && renderBuySMS()}
         {activeModal === 'terms' && renderTerms()}
         {activeModal === 'privacy' && renderPrivacy()}
+        {activeModal === 'wishlist' && renderWishlist()}
     </div>
   );
 };
@@ -147,6 +155,57 @@ const ModalWrapper: React.FC<{ children: React.ReactNode, onClose: () => void, t
         </div>
     </div>
 );
+
+// --- Wishlist Modal ---
+const WishlistModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const navigate = useNavigate();
+    const [wishlistIds, setWishlistIds] = useState(UserService.getWishlist());
+    const allItems = DataService.getMarketplaceItems();
+    const wishlistedItems = allItems.filter(item => wishlistIds.includes(item.id));
+
+    const handleRemove = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        const newList = UserService.toggleWishlist(id);
+        setWishlistIds([...newList]);
+    };
+
+    return (
+        <ModalWrapper title="Saved Items" onClose={onClose} height="h-[90vh]">
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gray-50">
+                {wishlistedItems.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <ShoppingBag size={48} className="text-gray-300 mb-3"/>
+                        <p className="text-gray-500 font-medium text-sm">No saved items yet.</p>
+                        <button onClick={() => { onClose(); navigate('/marketplace'); }} className="mt-4 text-[#ff4b9a] font-bold text-sm">Browse Marketplace</button>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {wishlistedItems.map(item => (
+                            <div 
+                                key={item.id} 
+                                onClick={() => { onClose(); navigate(`/marketplace/item/${item.id}`); }}
+                                className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex gap-3 cursor-pointer active:scale-[0.98] transition-transform"
+                            >
+                                <img src={item.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa'} className="w-20 h-20 rounded-xl object-cover bg-gray-100" />
+                                <div className="flex-1 flex flex-col justify-center">
+                                    <div className="flex justify-between items-start">
+                                        <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{item.name}</h4>
+                                        <button onClick={(e) => handleRemove(e, item.id)} className="text-red-500 p-1 hover:bg-red-50 rounded-full"><Heart size={16} fill="currentColor"/></button>
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-1"><MapPin size={10}/> {item.location}</p>
+                                    <div className="mt-auto flex items-baseline gap-1">
+                                        <span className="font-extrabold text-gray-900 text-sm">{item.displayPrice}</span>
+                                        <span className="text-[10px] text-gray-400 font-medium">{item.period}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </ModalWrapper>
+    );
+};
 
 // --- Edit Profile Modal ---
 const EditProfileModal: React.FC<{ user: UserType, onClose: () => void, onSave: (u: UserType) => void }> = ({ user, onClose, onSave }) => {

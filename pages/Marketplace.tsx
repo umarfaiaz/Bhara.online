@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ShoppingBag, MapPin, Star, Building2, Car, Camera, Briefcase, Calendar, ChevronLeft, ChevronRight, Share2, Heart, Phone, Mail, CheckCircle2, Clock, Plus, ArrowRight, User, X, BedDouble, Bath, Ruler, Fuel, Settings2, ShieldCheck, Eye, EyeOff, LayoutGrid, Zap, Image as ImageIcon, MessageCircle, Edit3, Trash2, Navigation, MousePointerClick, Check } from 'lucide-react';
+import { Search, Filter, ShoppingBag, MapPin, Star, Building2, Car, Camera, Briefcase, Calendar, ChevronLeft, ChevronRight, Share2, Heart, Phone, Mail, CheckCircle2, Clock, Plus, ArrowRight, User, X, BedDouble, Bath, Ruler, Fuel, Settings2, ShieldCheck, Eye, EyeOff, LayoutGrid, Zap, Image as ImageIcon, MessageCircle, Edit3, Trash2, Navigation, MousePointerClick, Check, SlidersHorizontal, ArrowDownUp, Flag, ThumbsUp, CalendarDays, Shield, Armchair, Monitor, Home as HomeIcon,  MessageSquare, Layers, ArrowUpDown, Tag, Bike, Music, Shirt, Hammer, Copy, BarChart3, AlertCircle, RefreshCw, MoreVertical } from 'lucide-react';
 import { Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { DataService, ChatService, UserService } from '../services/mockData';
-import { AssetType, RentCycle } from '../types';
+import { AssetType, RentCycle, Building, BaseAsset } from '../types';
 import { Logo } from '../components/Logo';
+import { MARKETPLACE_CATEGORIES } from '../constants';
 
 // Helper for local auth check
 const isAuth = () => localStorage.getItem('bhara_auth') === 'true';
@@ -14,78 +15,338 @@ const Marketplace: React.FC = () => {
   return (
     <Routes>
       <Route index element={<MarketplaceGrid />} />
-      <Route path="manage" element={<MyListings />} />
       <Route path="item/:id" element={<ItemDetails />} />
       <Route path="post" element={<PostAd />} />
     </Routes>
   );
 };
 
-// --- ASSET CARD (E-Commerce Style) ---
-const AssetCard: React.FC<{ item: any, onClick: () => void, isOwner?: boolean, onEdit?: () => void, onUnlist?: () => void }> = ({ item, onClick, isOwner, onEdit, onUnlist }) => {
-    const isFlat = item.assetType === 'Residential';
-    const isInstant = item.booking_type === 'instant';
+// --- MARKETPLACE GRID & LISTINGS ---
+const MarketplaceGrid: React.FC = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const state = (location.state as any) || {};
     
+    // State
+    const [searchTerm, setSearchTerm] = useState(state.search || '');
+    const [selectedCategory, setSelectedCategory] = useState(state.category || 'All');
+    const [selectedSubCategory, setSelectedSubCategory] = useState<string>('All');
+    const [showFilters, setShowFilters] = useState(false);
+    const [activeTab, setActiveTab] = useState<'Browse' | 'Saved'>('Browse');
+    const [wishlist, setWishlist] = useState<string[]>(UserService.getWishlist());
+    
+    // Filters
+    const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc'>('newest');
+    const [priceRange, setPriceRange] = useState<{min: string, max: string}>({min: '', max: ''});
+
+    useEffect(() => {
+        setSelectedSubCategory('All');
+    }, [selectedCategory]);
+
+    useEffect(() => {
+        setWishlist(UserService.getWishlist());
+    }, []);
+
+    const allItems = DataService.getMarketplaceItems();
+
+    const filteredItems = allItems.filter((item: any) => {
+        if (activeTab === 'Saved' && !wishlist.includes(item.id)) return false;
+
+        const matchesSearch = !searchTerm || item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              item.location?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        let matchesCategory = true;
+        if (selectedCategory !== 'All') {
+            matchesCategory = item.category === selectedCategory;
+            if (matchesCategory && selectedSubCategory !== 'All') {
+                const sub = selectedSubCategory.toLowerCase();
+                const typeMatch = item.type?.toLowerCase() === sub;
+                const nameMatch = item.name?.toLowerCase().includes(sub);
+                matchesCategory = typeMatch || nameMatch;
+            }
+        }
+
+        const price = parseInt(item.displayPrice.replace(/[^0-9]/g, '')) || 0;
+        const min = priceRange.min ? parseInt(priceRange.min) : 0;
+        const max = priceRange.max ? parseInt(priceRange.max) : Infinity;
+        const matchesPrice = price >= min && price <= max;
+        
+        return matchesSearch && matchesCategory && matchesPrice;
+    }).sort((a: any, b: any) => {
+        const priceA = parseInt(a.displayPrice.replace(/[^0-9]/g, '')) || 0;
+        const priceB = parseInt(b.displayPrice.replace(/[^0-9]/g, '')) || 0;
+        
+        if (sortBy === 'price_asc') return priceA - priceB;
+        if (sortBy === 'price_desc') return priceB - priceA;
+        return 0; 
+    });
+
+    const categories = ['All', ...Object.keys(MARKETPLACE_CATEGORIES)];
+    const subCategories = selectedCategory !== 'All' ? ['All', ...MARKETPLACE_CATEGORIES[selectedCategory]] : [];
+
+    const handleWishlistToggle = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const newList = UserService.toggleWishlist(id);
+        setWishlist([...newList]);
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 pb-20">
+             {/* Header */}
+             <div className="bg-white sticky top-0 z-30 shadow-sm safe-top transition-all">
+                 <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-50">
+                    <button onClick={() => navigate('/home')} className="p-2.5 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors shrink-0">
+                        <HomeIcon size={20}/>
+                    </button>
+                     <div className="flex-1 relative">
+                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
+                         <input 
+                            type="text" 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search cars, flats, cameras..." 
+                            className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#ff4b9a]/20 transition-all text-sm font-medium"
+                         />
+                     </div>
+                     <button 
+                        onClick={() => setShowFilters(!showFilters)} 
+                        className={`p-2.5 rounded-xl transition-colors shrink-0 ${showFilters ? 'bg-[#ff4b9a] text-white shadow-lg' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                     >
+                         <SlidersHorizontal size={20}/>
+                     </button>
+                     <button 
+                        onClick={() => navigate('/myspace/listings')} 
+                        className="hidden sm:flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 transition-all shrink-0"
+                     >
+                         My Listings
+                     </button>
+                     <button 
+                        onClick={() => navigate('/marketplace/post')} 
+                        className="hidden sm:flex items-center gap-2 bg-[#2d1b4e] text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-black transition-all shrink-0"
+                     >
+                         <Plus size={18}/> Post Ad
+                     </button>
+                 </div>
+                 
+                 {/* Filters Panel */}
+                 {showFilters && (
+                     <div className="px-4 py-4 bg-white border-b border-gray-100 animate-in slide-in-from-top duration-200">
+                         <div className="flex flex-col sm:flex-row gap-4">
+                             <div className="flex-1">
+                                 <label className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Sort By</label>
+                                 <div className="flex bg-gray-100 p-1 rounded-lg">
+                                     {[
+                                         { id: 'newest', label: 'Newest' },
+                                         { id: 'price_asc', label: 'Price: Low' },
+                                         { id: 'price_desc', label: 'Price: High' }
+                                     ].map(opt => (
+                                         <button 
+                                            key={opt.id} 
+                                            onClick={() => setSortBy(opt.id as any)} 
+                                            className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${sortBy === opt.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
+                                         >
+                                             {opt.label}
+                                         </button>
+                                     ))}
+                                 </div>
+                             </div>
+                             <div className="flex-1">
+                                 <label className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Price Range (৳)</label>
+                                 <div className="flex gap-2">
+                                     <input 
+                                        type="number" 
+                                        placeholder="Min" 
+                                        value={priceRange.min}
+                                        onChange={e => setPriceRange({...priceRange, min: e.target.value})}
+                                        className="w-full bg-gray-100 px-3 py-2 rounded-lg text-sm font-bold outline-none focus:ring-1 focus:ring-[#ff4b9a]"
+                                     />
+                                     <input 
+                                        type="number" 
+                                        placeholder="Max" 
+                                        value={priceRange.max}
+                                        onChange={e => setPriceRange({...priceRange, max: e.target.value})}
+                                        className="w-full bg-gray-100 px-3 py-2 rounded-lg text-sm font-bold outline-none focus:ring-1 focus:ring-[#ff4b9a]"
+                                     />
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                 )}
+
+                 {/* View Tabs & Categories */}
+                 <div className="flex items-center gap-4 px-4 pt-3 pb-1 overflow-x-auto scrollbar-hide">
+                     <div className="flex bg-gray-100 p-1 rounded-xl shrink-0">
+                         <button onClick={() => setActiveTab('Browse')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'Browse' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}>Browse</button>
+                         <button onClick={() => setActiveTab('Saved')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'Saved' ? 'bg-white shadow-sm text-[#ff4b9a]' : 'text-gray-500'}`}>Saved</button>
+                     </div>
+                     <div className="w-px h-6 bg-gray-200 shrink-0"></div>
+                     <div className="flex gap-2">
+                        {categories.map(cat => (
+                            <button 
+                                key={cat}
+                                onClick={() => setSelectedCategory(cat)}
+                                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${selectedCategory === cat ? 'bg-[#2d1b4e] text-white border-[#2d1b4e] shadow-md' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                     </div>
+                 </div>
+
+                 {/* Sub Categories (Contextual) */}
+                 {subCategories.length > 0 && (
+                     <div className="px-4 pb-3 pt-2 flex gap-2 overflow-x-auto scrollbar-hide animate-in fade-in slide-in-from-left duration-300">
+                         {subCategories.map(sub => (
+                             <button 
+                                key={sub}
+                                onClick={() => setSelectedSubCategory(sub)}
+                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all ${selectedSubCategory === sub ? 'bg-[#ff4b9a]/10 text-[#ff4b9a] border border-[#ff4b9a]/20' : 'bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100'}`}
+                             >
+                                 {sub}
+                             </button>
+                         ))}
+                     </div>
+                 )}
+                 
+                 {/* Results Count Bar */}
+                 <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                     <p className="text-[10px] font-bold text-gray-400 uppercase">{filteredItems.length} Results found</p>
+                     {searchTerm && <button onClick={() => setSearchTerm('')} className="text-[10px] font-bold text-[#ff4b9a] hover:underline">Clear Search</button>}
+                 </div>
+             </div>
+
+             {/* Grid */}
+             <div className="max-w-7xl mx-auto p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                 {filteredItems.map((item: any) => (
+                     <AssetCard 
+                        key={item.id} 
+                        item={item} 
+                        onClick={() => navigate(`/marketplace/item/${item.id}`)}
+                        isWishlisted={wishlist.includes(item.id)}
+                        onToggleWishlist={(e) => handleWishlistToggle(item.id, e)}
+                     />
+                 ))}
+                 {filteredItems.length === 0 && (
+                     <div className="col-span-full text-center py-20">
+                         <ShoppingBag size={48} className="mx-auto text-gray-300 mb-4"/>
+                         <p className="text-gray-500 font-medium">{activeTab === 'Saved' ? 'No saved items yet.' : 'No items found matching criteria.'}</p>
+                         {activeTab === 'Browse' && <button onClick={() => { setSelectedCategory('All'); setSearchTerm(''); setPriceRange({min:'',max:''}); }} className="mt-4 text-[#ff4b9a] font-bold text-sm">Reset Filters</button>}
+                     </div>
+                 )}
+             </div>
+
+             {/* Mobile FAB for Post Ad */}
+             <div className="md:hidden fixed bottom-24 right-5 z-40 flex flex-col gap-3">
+                 <button onClick={() => navigate('/myspace/listings')} className="bg-white text-gray-700 w-12 h-12 rounded-full shadow-lg border border-gray-100 flex items-center justify-center hover:scale-105 transition-all">
+                     <User size={20}/>
+                 </button>
+                 <button onClick={() => navigate('/marketplace/post')} className="bg-[#ff4b9a] text-white w-14 h-14 rounded-full shadow-xl shadow-pink-500/30 flex items-center justify-center hover:scale-105 active:scale-90 transition-all">
+                     <Plus size={28}/>
+                 </button>
+             </div>
+        </div>
+    );
+};
+
+const AssetCard: React.FC<{ item: any, onClick: () => void, isOwner?: boolean, onEdit?: () => void, onUnlist?: () => void, isWishlisted?: boolean, onToggleWishlist?: (e: any) => void }> = ({ item, onClick, isOwner, onEdit, onUnlist, isWishlisted, onToggleWishlist }) => {
+    const isInstant = item.booking_type === 'instant';
+    let subLabel = item.category;
+    let badgeColor = "bg-gray-100 text-gray-600";
+    if (item.assetType === 'Vehicle') { subLabel = item.type; badgeColor = "bg-indigo-50 text-indigo-600"; }
+    if (item.assetType === 'Residential') { subLabel = 'Apartment'; badgeColor = "bg-blue-50 text-blue-600"; }
+    if (item.assetType === 'Gadget') { subLabel = item.category; badgeColor = "bg-purple-50 text-purple-600"; }
+    if (item.assetType === 'Service') { subLabel = item.category; badgeColor = "bg-pink-50 text-pink-600"; }
+
+    const renderDetails = () => {
+        switch(item.assetType) {
+            case 'Residential':
+                return (
+                    <div className="flex items-center justify-between text-[10px] text-gray-500 font-medium mt-2">
+                        <span className="flex items-center gap-1"><BedDouble size={12}/> {item.details?.bedrooms || 3}</span>
+                        <span className="w-px h-3 bg-gray-300"></span>
+                        <span className="flex items-center gap-1"><Bath size={12}/> {item.details?.washrooms || 2}</span>
+                        <span className="w-px h-3 bg-gray-300"></span>
+                        <span className="flex items-center gap-1"><Ruler size={12}/> {item.details?.size || 1200}</span>
+                    </div>
+                );
+            case 'Vehicle':
+                return (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                        <span className="px-1.5 py-0.5 rounded-md bg-gray-50 text-[9px] font-bold text-gray-600 border border-gray-100">{item.details?.model_year || '2019'}</span>
+                        <span className="px-1.5 py-0.5 rounded-md bg-gray-50 text-[9px] font-bold text-gray-600 border border-gray-100">{item.details?.fuel || 'CNG'}</span>
+                        <span className="px-1.5 py-0.5 rounded-md bg-gray-50 text-[9px] font-bold text-gray-600 border border-gray-100">{item.details?.transmission || 'Auto'}</span>
+                    </div>
+                );
+            case 'Gadget':
+                return (
+                    <div className="flex items-center gap-1 text-[10px] text-gray-500 font-medium mt-2">
+                        <span className="truncate">{item.details?.brand}</span>
+                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                        <span className="truncate">{item.details?.model}</span>
+                    </div>
+                );
+            default:
+                return (
+                    <div className="mt-2">
+                        <p className="text-[10px] text-gray-400 line-clamp-1">{item.listing_description || 'Verified Service'}</p>
+                    </div>
+                );
+        }
+    };
+
     return (
         <div 
             onClick={onClick}
             className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer flex flex-col h-full relative"
         >
-            {/* Image Area */}
-            <div className="relative aspect-square bg-gray-100 overflow-hidden">
+            <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
                 <img 
                     src={item.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800'} 
                     alt={item.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                <div className="absolute top-3 left-3 flex gap-2">
-                    <span className="px-2 py-1 bg-white/90 backdrop-blur-md rounded-lg text-[10px] font-bold text-gray-900 uppercase tracking-wide shadow-sm">
-                        {item.category}
+                <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
+                    <span className={`px-2 py-1 backdrop-blur-md rounded-md text-[8px] font-bold uppercase tracking-wide shadow-sm ${badgeColor}`}>
+                        {subLabel}
                     </span>
-                    {isInstant && <span className="px-2 py-1 bg-[#ff4b9a]/90 backdrop-blur-md rounded-lg text-[10px] font-bold text-white uppercase tracking-wide shadow-sm flex items-center gap-1"><Zap size={8}/> Instant</span>}
+                    {/* Wishlist Button */}
+                    {!isOwner && onToggleWishlist && (
+                        <button onClick={onToggleWishlist} className="p-1.5 bg-white/20 backdrop-blur-md rounded-full hover:bg-white transition-colors group/heart">
+                            <Heart size={14} className={isWishlisted ? "fill-[#ff4b9a] text-[#ff4b9a]" : "text-white group-hover/heart:text-[#ff4b9a]"} />
+                        </button>
+                    )}
                 </div>
-                <button className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-md rounded-full text-gray-400 hover:text-red-500 transition-colors">
-                    <Heart size={14} />
-                </button>
-                
-                {/* Location Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 via-black/20 to-transparent">
-                    <div className="flex items-center gap-1 text-[10px] text-white font-medium">
-                        <MapPin size={10} className="text-[#ff4b9a]"/> {item.city || item.location || 'Dhaka'}
+                {isInstant && (
+                    <div className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-[#ff4b9a] text-white rounded text-[8px] font-bold uppercase tracking-wide shadow-sm flex items-center gap-0.5">
+                        <Zap size={8} fill="currentColor"/> Instant
                     </div>
-                </div>
+                )}
             </div>
 
-            {/* Content Area */}
-            <div className="p-4 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-1">
-                    <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 flex-1 mr-2">{item.name}</h3>
-                    <div className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded text-[10px] font-bold text-gray-600">
-                        <Star size={10} className="text-orange-400 fill-orange-400"/> 4.8
+            <div className="p-3 flex flex-col flex-1">
+                <div className="flex justify-between items-start gap-2">
+                    <h3 className="text-xs sm:text-sm font-bold text-gray-900 leading-tight line-clamp-1">{item.name}</h3>
+                    <div className="flex items-center gap-0.5 text-[9px] font-bold text-gray-600">
+                        <Star size={9} className="text-orange-400 fill-orange-400"/> 4.8
                     </div>
                 </div>
-
-                {/* Quick Specs */}
-                <p className="text-xs text-gray-500 mb-3 line-clamp-1">
-                    {isFlat ? `${item.details?.bedrooms || 3} Bed • ${item.details?.size || 1200} sqft` : item.listing_description || 'Verified Asset'}
-                </p>
-
-                <div className="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
+                {renderDetails()}
+                <div className="mt-auto pt-3 flex items-center justify-between">
                     <div>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">Rent</p>
                         <div className="flex items-baseline gap-0.5">
-                            <span className="text-base font-extrabold text-[#2d1b4e]">{item.displayPrice}</span>
-                            <span className="text-[10px] text-gray-500 font-medium">{item.period}</span>
+                            <span className="text-sm font-extrabold text-gray-900">{item.displayPrice}</span>
+                            <span className="text-[9px] text-gray-400 font-medium">{item.period}</span>
                         </div>
+                        <p className="text-[9px] text-gray-400 flex items-center gap-0.5 truncate max-w-[100px] mt-0.5"><MapPin size={8}/> {item.city || 'Dhaka'}</p>
                     </div>
                     {isOwner ? (
-                        <div className="flex gap-2">
-                            <button onClick={(e) => { e.stopPropagation(); onEdit && onEdit(); }} className="p-2 bg-gray-100 rounded-full hover:bg-blue-50 text-gray-600 hover:text-blue-600"><Edit3 size={14}/></button>
-                            <button onClick={(e) => { e.stopPropagation(); onUnlist && onUnlist(); }} className="p-2 bg-gray-100 rounded-full hover:bg-red-50 text-gray-600 hover:text-red-600"><Trash2 size={14}/></button>
+                        <div className="flex gap-1">
+                            <button onClick={(e) => { e.stopPropagation(); onEdit && onEdit(); }} className="p-1.5 bg-gray-100 rounded-full hover:bg-blue-50 text-gray-600 hover:text-blue-600"><Edit3 size={12}/></button>
+                            <button onClick={(e) => { e.stopPropagation(); onUnlist && onUnlist(); }} className="p-1.5 bg-gray-100 rounded-full hover:bg-red-50 text-gray-600 hover:text-red-600"><Trash2 size={12}/></button>
                         </div>
                     ) : (
-                        <button className="bg-[#ff4b9a] text-white p-2 rounded-xl shadow-lg shadow-pink-200 active:scale-95 transition-transform">
-                            <ArrowRight size={16}/>
+                        <button className="bg-gray-50 hover:bg-[#ff4b9a] text-gray-400 hover:text-white p-1.5 rounded-full transition-colors">
+                            <ArrowRight size={14}/>
                         </button>
                     )}
                 </div>
@@ -94,464 +355,249 @@ const AssetCard: React.FC<{ item: any, onClick: () => void, isOwner?: boolean, o
     );
 };
 
-// --- MARKETPLACE GRID ---
-const MarketplaceGrid: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'All' | 'Real Estate' | 'Vehicles' | 'Tech' | 'Events' | 'Services'>('All');
-  const [search, setSearch] = useState('');
-  const [items, setItems] = useState<any[]>([]);
-
-  useEffect(() => {
-    setItems(DataService.getMarketplaceItems());
-    if (location.state?.category) setActiveTab(location.state.category);
-    if (location.state?.search) setSearch(location.state.search);
-  }, [location.state]);
-
-  const filteredItems = items.filter(item => {
-    const matchesTab = activeTab === 'All' || item.category === activeTab || (activeTab === 'Real Estate' && item.type === 'Residential');
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || (item.sub || '').toLowerCase().includes(search.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
-
-  const handlePostAd = () => isAuth() ? navigate('post') : navigate('/login');
-
-  return (
-    <div className="min-h-screen bg-[#f8f9fa] pb-28">
-        {/* Sticky Header */}
-        <div className="bg-white sticky top-0 z-30 shadow-sm border-b border-gray-200 transition-all duration-300">
-            <div className="max-w-7xl mx-auto w-full px-4 py-3">
-                <div className="flex items-center justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-2" onClick={() => navigate('/home')}>
-                        <div className="md:hidden"><Logo size="sm" /></div>
-                        <h2 className="hidden md:block text-xl font-extrabold text-gray-900 tracking-tight">Marketplace</h2>
-                    </div>
-                    
-                    {/* Search Bar */}
-                    <div className="flex-1 max-w-lg relative">
-                        <input 
-                            type="text" 
-                            value={search} 
-                            onChange={(e) => setSearch(e.target.value)} 
-                            placeholder="Search cars, cameras, flats..." 
-                            className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border-transparent rounded-xl text-sm font-bold text-gray-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#ff4b9a] transition-all placeholder:text-gray-400"
-                        />
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                    </div>
-
-                    <div className="flex gap-2">
-                        <button onClick={() => navigate('manage')} className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 hidden sm:block"><User size={20}/></button>
-                        <button onClick={handlePostAd} className="flex items-center gap-2 bg-[#2d1b4e] text-white px-4 py-2.5 rounded-xl shadow-lg active:scale-95 transition-all">
-                            <Plus size={18} />
-                            <span className="text-xs font-bold uppercase hidden sm:block">Post Ad</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Categories */}
-                <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                    {[
-                        { id: 'All', icon: LayoutGrid }, { id: 'Real Estate', icon: Building2 }, { id: 'Vehicles', icon: Car },
-                        { id: 'Tech', icon: Camera }, { id: 'Events', icon: Calendar }, { id: 'Services', icon: Briefcase }
-                    ].map(cat => (
-                        <button 
-                            key={cat.id} 
-                            onClick={() => setActiveTab(cat.id as any)} 
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all border ${activeTab === cat.id ? 'bg-[#ff4b9a] border-[#ff4b9a] text-white shadow-md' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
-                        >
-                            <cat.icon size={14} />{cat.id}
-                        </button>
-                    ))}
-                </div>
-            </div>
-        </div>
-
-        {/* Content Grid */}
-        <div className="max-w-7xl mx-auto p-4 md:p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-gray-900">{filteredItems.length} Listings Found</h3>
-                <button className="flex items-center gap-1 text-xs font-bold text-gray-500 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"><Filter size={14}/> Filter</button>
-            </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {filteredItems.map((item, i) => <AssetCard key={i} item={item} onClick={() => navigate(`item/${item.id}`)} />)}
-            </div>
-            
-            {filteredItems.length === 0 && (
-                <div className="text-center py-20 flex flex-col items-center">
-                    <ShoppingBag size={64} className="text-gray-200 mb-4"/>
-                    <h3 className="text-lg font-bold text-gray-900">No items found</h3>
-                    <p className="text-sm text-gray-500">Try adjusting your search or category.</p>
-                </div>
-            )}
-        </div>
-    </div>
-  );
-};
-
-// --- ITEM DETAILS (E-Commerce Style) ---
 const ItemDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const item = DataService.getMarketplaceItems().find(i => i.id === id) as any;
     const currentUser = UserService.getCurrentUser();
-    const [showBookingModal, setShowBookingModal] = useState(false);
+    const [wishlist, setWishlist] = useState<string[]>(UserService.getWishlist());
+    const [recommendations, setRecommendations] = useState<any[]>([]);
+    
+    useEffect(() => {
+        setWishlist(UserService.getWishlist());
+        if(id) setRecommendations(DataService.getRecommendations(id));
+    }, [id]);
 
-    if (!item) return <div>Item not found</div>;
+    if (!item) return <div className="p-10 text-center">Item not found</div>;
 
     const isOwner = item.user_id === currentUser.id;
-    // Mock Owner Data (In real app, fetch from user_id)
+    const images = item.images?.length ? item.images : ['https://images.unsplash.com/photo-1560518883-ce09059eeffa'];
     const owner = {
-        name: isOwner ? currentUser.name : 'Rafiqul Islam', // Mock name for demo
-        joined: '2023',
-        rating: 4.9,
-        response: '1 hr',
+        name: isOwner ? currentUser.name : 'Rafiqul Islam',
+        joined: 'Jan 2023',
         avatar: isOwner ? currentUser.avatar : 'https://i.pravatar.cc/150?u=owner',
         verified: true
     };
 
-    const isInstant = item.booking_type === 'instant';
+    const isWishlisted = wishlist.includes(item.id);
 
-    const handleAction = () => {
+    // Determine contact buttons based on preferences
+    const preferences: string[] = item.contact_preferences || ['chat', 'phone']; // Default
+    const showChat = preferences.includes('chat');
+    const showPhone = preferences.includes('phone');
+    
+    const handleAction = (type: 'chat' | 'request' | 'phone') => {
         if (!isAuth()) { navigate('/login'); return; }
+        if (isOwner) { alert("This is your own listing."); return; }
         
-        if (isOwner) {
-            // Even if owner, show preview alert instead of manage
-            alert("This is how users see your listing. Use My Space to manage.");
-            return;
-        }
-
-        if (isInstant) {
-            // Trigger Booking Modal
-            setShowBookingModal(true);
-        } else {
-            // Start Chat Flow
-            DataService.notifyOwner(item.user_id, 'New Rental Request', `${currentUser.name} requested to rent ${item.name}.`);
-            ChatService.startChat(item.user_id, `Hi, I am interested in renting ${item.name}. Is it available?`);
+        if (type === 'chat') {
+            ChatService.startChat(item.user_id, `Hi, I'm interested in ${item.name}.`);
             navigate('/inbox');
+        } else if (type === 'phone') {
+            window.location.href = 'tel:01700000000'; // Mock number
+        } else {
+            alert(`Request sent for ${item.name}! Owner will contact you.`);
         }
     };
 
-    const handleConfirmBooking = () => {
-        // Mock Booking Success
-        DataService.notifyOwner(item.user_id, 'New Instant Booking', `${currentUser.name} booked ${item.name} instantly.`);
-        alert('Booking Confirmed! The owner has been notified.');
-        setShowBookingModal(false);
-        navigate('/inbox');
+    const handleShare = async () => {
+        const shareData = {
+            title: item.name,
+            text: `Check out ${item.name} on Bhara.online!`,
+            url: window.location.href,
+        };
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                navigator.clipboard.writeText(window.location.href);
+                alert("Link copied to clipboard!");
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleWishlist = () => {
+        const newList = UserService.toggleWishlist(item.id);
+        setWishlist([...newList]);
+    };
+
+    const renderKeySpecs = () => {
+        const specItem = (label: string, value: string | number, icon: any) => (
+            <div className="flex flex-col items-center justify-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="text-gray-400 mb-1">{icon}</div>
+                <span className="text-xs font-bold text-gray-900 text-center leading-tight">{value}</span>
+                <span className="text-[10px] text-gray-500 uppercase tracking-wide mt-0.5">{label}</span>
+            </div>
+        );
+
+        if (item.assetType === 'Residential') {
+            return (
+                <>
+                    {specItem('Bedrooms', item.details?.bedrooms || 3, <BedDouble size={18}/>)}
+                    {specItem('Bathrooms', item.details?.washrooms || 2, <Bath size={18}/>)}
+                    {specItem('Size', `${item.details?.size || 1200} sqft`, <Ruler size={18}/>)}
+                    {specItem('Floor', '4th', <Layers size={18}/>)}
+                </>
+            );
+        }
+        if (item.assetType === 'Vehicle') {
+            return (
+                <>
+                    {specItem('Model', item.details?.model_year || '2019', <CalendarDays size={18}/>)}
+                    {specItem('Fuel', item.details?.fuel || 'CNG', <Fuel size={18}/>)}
+                    {specItem('Seats', item.details?.seats || 4, <Armchair size={18}/>)}
+                    {specItem('Gear', item.details?.transmission || 'Auto', <Settings2 size={18}/>)}
+                </>
+            );
+        }
+        // Generic Specs for Gadgets and others
+        return (
+            <>
+                {specItem('Brand', item.details?.brand || 'Generic', <Star size={18}/>)}
+                {specItem('Model', item.details?.model || 'Std', <Camera size={18}/>)}
+                {specItem('Condition', 'Good', <ShieldCheck size={18}/>)}
+                {specItem('Verified', 'Yes', <CheckCircle2 size={18}/>)}
+            </>
+        );
     };
 
     return (
-        <div className="min-h-screen bg-white pb-32 animate-in slide-in-from-bottom duration-300">
-            {/* Header / Nav */}
-            <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex justify-between items-center">
-                <button onClick={() => navigate(-1)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"><ChevronLeft size={20}/></button>
-                <h1 className="text-sm font-bold text-gray-900 truncate max-w-[200px]">{item.name}</h1>
+        <div className="min-h-screen bg-white pb-24">
+            <div className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md px-4 py-3 flex justify-between items-center border-b border-gray-100">
+                <button onClick={() => navigate('/marketplace')} className="p-2 rounded-full hover:bg-gray-100 text-gray-700 transition-colors">
+                    <ChevronLeft size={22}/>
+                </button>
                 <div className="flex gap-2">
-                    <button className="p-2 bg-gray-100 rounded-full hover:text-red-500 transition-colors"><Heart size={20}/></button>
-                    <button className="p-2 bg-gray-100 rounded-full hover:text-blue-500 transition-colors"><Share2 size={20}/></button>
+                    <button onClick={handleShare} className="p-2 rounded-full hover:bg-gray-100 text-gray-700"><Share2 size={20}/></button>
+                    <button onClick={handleWishlist} className="p-2 rounded-full hover:bg-gray-100 text-gray-700">
+                        <Heart size={20} className={isWishlisted ? "fill-[#ff4b9a] text-[#ff4b9a]" : ""}/>
+                    </button>
                 </div>
             </div>
 
-            <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 p-0 md:p-8">
-                {/* Left: Images */}
-                <div className="bg-gray-100 md:rounded-3xl overflow-hidden relative group aspect-[4/3] md:aspect-square">
-                    <img src={item.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa'} className="w-full h-full object-cover" />
-                    <div className="absolute bottom-4 right-4 bg-black/50 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md flex items-center gap-1">
-                        <ImageIcon size={12}/> 1/3
-                    </div>
-                    {isInstant && <div className="absolute top-4 left-4 bg-[#ff4b9a] text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1"><Zap size={12}/> Instant Book</div>}
+            {/* Gallery */}
+            <div className="h-[40vh] bg-gray-100 relative mt-[60px]">
+                <img src={images[0]} className="w-full h-full object-cover"/>
+                <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-md text-white px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                    <ImageIcon size={14}/> 1/{images.length}
                 </div>
+            </div>
 
-                {/* Right: Details */}
-                <div className="px-5 md:px-0 space-y-8">
-                    
-                    {/* Title & Price */}
+            <div className="px-5 py-6 -mt-6 rounded-t-[2rem] bg-white relative z-10">
+                <div className="flex justify-between items-start mb-4">
                     <div>
-                        <div className="flex justify-between items-start mb-2">
-                            <span className="text-[#ff4b9a] font-extrabold text-xs uppercase tracking-wider bg-pink-50 px-2 py-1 rounded-md">{item.category}</span>
-                            <div className="flex items-center gap-1 text-orange-500 font-bold text-sm"><Star size={14} fill="currentColor"/> 4.8 (24)</div>
-                        </div>
-                        <h1 className="text-3xl font-black text-gray-900 mb-2 leading-tight">{item.name}</h1>
-                        <p className="text-gray-500 flex items-center gap-2 text-sm font-medium"><MapPin size={16} className="text-gray-400"/> {item.location || item.city}</p>
-                        
-                        <div className="mt-6 flex items-baseline gap-2 pb-6 border-b border-gray-100">
-                            <span className="text-4xl font-black text-gray-900">{item.displayPrice}</span>
-                            <span className="text-base font-bold text-gray-400">{item.period}</span>
-                        </div>
-                    </div>
-
-                    {/* Owner / Lender Profile Card */}
-                    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="relative">
-                                <img src={owner.avatar} className="w-12 h-12 rounded-full border-2 border-white shadow-sm" alt="Owner"/>
-                                {owner.verified && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-0.5 border-2 border-white"><CheckCircle2 size={10}/></div>}
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-gray-900 text-sm">{owner.name}</h4>
-                                <p className="text-[10px] text-gray-500 font-medium">Owner • Joined {owner.joined}</p>
-                                <p className="text-[10px] text-green-600 font-bold mt-0.5 flex items-center gap-1"><Clock size={10}/> Responds within {owner.response}</p>
-                            </div>
-                        </div>
-                        <button onClick={() => { if(!isOwner) ChatService.startChat(item.user_id, `Hi, about ${item.name}...`); navigate('/inbox'); }} className="bg-white border border-gray-200 p-2.5 rounded-xl text-gray-600 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm">
-                            <MessageCircle size={20}/>
-                        </button>
-                    </div>
-
-                    {/* Specifications Grid */}
-                    {item.details && (
-                        <div>
-                            <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">Specifications</h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                {Object.entries(item.details).map(([key, value]) => (
-                                    <div key={key} className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
-                                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
-                                            {key === 'bedrooms' ? <BedDouble size={16}/> : 
-                                             key === 'size' ? <Ruler size={16}/> :
-                                             key === 'fuel' ? <Fuel size={16}/> : <Zap size={16}/>}
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase">{key}</p>
-                                            <p className="text-sm font-bold text-gray-900 capitalize">{value as string}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Description */}
-                    <div>
-                        <h3 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-wider">About this rental</h3>
-                        <p className="text-gray-600 text-sm leading-relaxed">
-                            {item.listing_description || item.description || "Well maintained and fully verified asset. Contact owner for more specific details regarding availability and terms."}
+                        <h1 className="text-2xl font-bold text-gray-900 leading-tight mb-2">{item.name}</h1>
+                        <p className="text-sm text-gray-500 flex items-center gap-1">
+                            <MapPin size={16} className="text-[#ff4b9a]"/> {item.location}
                         </p>
                     </div>
-
-                    {/* Location Map Placeholder */}
-                    <div>
-                        <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">Location</h3>
-                        <div className="h-40 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-center relative overflow-hidden group cursor-pointer">
-                            <MapPin size={32} className="text-blue-500 mb-2"/>
-                            <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <span className="bg-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">View on Map</span>
-                            </div>
-                        </div>
+                    <div className="text-right">
+                        <p className="text-2xl font-black text-[#ff4b9a]">{item.displayPrice}</p>
+                        <p className="text-xs font-bold text-gray-400">{item.period}</p>
                     </div>
                 </div>
+
+                {/* Key Specs */}
+                <div className="grid grid-cols-4 gap-2 mb-8">
+                    {renderKeySpecs()}
+                </div>
+
+                {/* Additional Charges */}
+                {item.additional_charges && item.additional_charges.length > 0 && (
+                    <div className="mb-8 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <h3 className="font-bold text-gray-900 mb-3 text-sm flex items-center gap-2">
+                            <Tag size={16} className="text-[#ff4b9a]"/> Other Charges
+                        </h3>
+                        <div className="space-y-2">
+                            {item.additional_charges.map((charge: any) => (
+                                <div key={charge.id} className="flex justify-between items-center text-xs">
+                                    <span className="text-gray-600 font-medium">{charge.name} <span className="text-[9px] text-gray-400">({charge.type})</span></span>
+                                    <span className="font-bold text-gray-900">৳{charge.amount}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Description */}
+                <div className="mb-8">
+                    <h3 className="font-bold text-gray-900 mb-3 text-sm">Description</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                        {item.listing_description || 'No description provided. Contact the owner for more details.'}
+                    </p>
+                </div>
+
+                {/* Owner */}
+                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl mb-8 border border-gray-100">
+                    <div className="relative">
+                        <img src={owner.avatar} className="w-12 h-12 rounded-full object-cover border border-white shadow-sm" alt="Owner"/>
+                        {owner.verified && <CheckCircle2 size={16} className="absolute -bottom-1 -right-1 text-green-500 bg-white rounded-full"/>}
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-bold text-gray-900 text-sm">{owner.name}</h4>
+                        <p className="text-[10px] text-gray-500">Member since {owner.joined}</p>
+                    </div>
+                    <button className="text-xs font-bold text-[#ff4b9a] hover:underline">View Profile</button>
+                </div>
+
+                {/* Recommendation Engine */}
+                {recommendations.length > 0 && (
+                    <div className="mb-8 pt-8 border-t border-gray-100">
+                        <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><SparklesIcon size={16} className="text-yellow-500 fill-yellow-500"/> You Might Also Like</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            {recommendations.map(rec => (
+                                <div key={rec.id} onClick={() => navigate(`/marketplace/item/${rec.id}`)} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer">
+                                    <div className="h-24 bg-gray-200">
+                                        <img src={rec.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa'} className="w-full h-full object-cover"/>
+                                    </div>
+                                    <div className="p-3">
+                                        <h4 className="font-bold text-xs text-gray-900 truncate">{rec.name}</h4>
+                                        <p className="text-[10px] text-gray-500">{rec.displayPrice}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Bottom Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] safe-bottom z-50">
-                <div className="max-w-6xl mx-auto flex items-center gap-4">
-                    <div className="hidden md:block">
-                        <p className="text-xs text-gray-400 font-bold uppercase">Total Price</p>
-                        <p className="text-xl font-black text-gray-900">{item.displayPrice}</p>
-                    </div>
-                    <button onClick={() => window.location.href = `tel:123`} className="w-14 h-14 bg-gray-100 text-gray-900 rounded-2xl flex items-center justify-center hover:bg-gray-200 transition-colors">
-                        <Phone size={24}/>
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 flex gap-3 safe-bottom z-40">
+                {showPhone && (
+                    <button onClick={() => handleAction('phone')} className="p-4 bg-gray-100 rounded-xl text-gray-900 hover:bg-gray-200 transition-colors">
+                        <Phone size={20}/>
                     </button>
-                    
-                    {/* Dynamic Booking Button */}
-                    <button 
-                        onClick={handleAction} 
-                        className={`flex-1 py-4 font-bold rounded-2xl shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${isInstant ? 'bg-black text-white shadow-gray-200' : 'bg-[#2d1b4e] text-white shadow-indigo-200'}`}
-                    >
-                        {isOwner ? (
-                            <span>Preview Mode</span> 
-                        ) : isInstant ? (
-                            <>Book Instantly <Zap size={20} className="fill-current text-yellow-400"/></>
-                        ) : (
-                            <>Request to Rent <MessageCircle size={20}/></>
-                        )}
+                )}
+                {showChat && (
+                    <button onClick={() => handleAction('chat')} className="flex-1 py-4 bg-[#2d1b4e] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-black transition-colors shadow-lg">
+                        <MessageCircle size={20}/> Chat Now
                     </button>
-                </div>
-            </div>
-
-            {/* Booking Confirmation Modal */}
-            {showBookingModal && (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative">
-                        <button onClick={() => setShowBookingModal(false)} className="absolute top-4 right-4 p-2 bg-gray-50 rounded-full hover:bg-gray-100"><X size={20}/></button>
-                        <div className="text-center mb-6">
-                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
-                                <CheckCircle2 size={32}/>
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900">Confirm Booking</h3>
-                            <p className="text-sm text-gray-500 mt-1">You are booking {item.name}</p>
-                        </div>
-                        
-                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-6">
-                            <div className="flex justify-between text-sm mb-2">
-                                <span className="text-gray-500">Rate</span>
-                                <span className="font-bold">{item.displayPrice} {item.period}</span>
-                            </div>
-                            <div className="flex justify-between text-sm mb-2">
-                                <span className="text-gray-500">Service Fee</span>
-                                <span className="font-bold">৳ 50</span>
-                            </div>
-                            <div className="border-t border-gray-200 pt-2 flex justify-between text-base font-black">
-                                <span>Total</span>
-                                <span>{item.displayPrice}</span>
-                            </div>
-                        </div>
-
-                        <button onClick={handleConfirmBooking} className="w-full py-4 bg-black text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
-                            Confirm & Pay
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// --- MY LISTINGS (Simplified) ---
-const MyListings: React.FC = () => {
-    const navigate = useNavigate();
-    const currentUser = UserService.getCurrentUser();
-    const [myItems, setMyItems] = useState(DataService.getMarketplaceItems().filter(i => i.user_id === currentUser.id));
-
-    const handleUnlist = (id: string, type: AssetType | 'Flat') => {
-        if(confirm("Are you sure you want to unlist this item?")) {
-            DataService.toggleListing(id, type, false);
-            setMyItems(prev => prev.filter(i => i.id !== id));
-        }
-    };
-
-    const handleEdit = (item: any) => {
-        if(item.assetType === 'Residential' && item.flat_no) {
-            navigate('/myspace/inventory/config-flat', { state: { editId: item.id, buildingId: item.building_id } });
-        } else if (item.assetType === 'Vehicle') {
-            navigate('/myspace/inventory/config-vehicle', { state: { editId: item.id } });
-        } else {
-            navigate('/myspace/inventory');
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="bg-white p-5 border-b border-gray-100 sticky top-0 z-40 flex items-center gap-3">
-                <button onClick={() => navigate('/marketplace')} className="p-2 rounded-full hover:bg-gray-100"><ChevronLeft size={24}/></button>
-                <h2 className="font-bold text-lg">My Listings</h2>
-            </div>
-            <div className="max-w-7xl mx-auto p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {myItems.map(item => (
-                    <AssetCard 
-                        key={item.id} 
-                        item={item} 
-                        onClick={() => navigate(`/marketplace/item/${item.id}`)}
-                        isOwner={true}
-                        onEdit={() => handleEdit(item)}
-                        onUnlist={() => handleUnlist(item.id, (item.assetType === 'Residential' ? 'Flat' : item.assetType) as AssetType | 'Flat')}
-                    />
-                ))}
-                {myItems.length === 0 && (
-                    <div className="col-span-full text-center py-20">
-                        <ShoppingBag size={48} className="mx-auto text-gray-300 mb-4"/>
-                        <p className="text-gray-500 font-medium">You haven't listed anything yet.</p>
-                        <button onClick={() => navigate('/marketplace/post')} className="mt-4 text-[#ff4b9a] font-bold">Post an Ad</button>
-                    </div>
+                )}
+                {!showChat && !showPhone && (
+                    <button onClick={() => handleAction('request')} className="flex-1 py-4 bg-[#ff4b9a] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-pink-600 transition-colors shadow-lg shadow-pink-200">
+                        Request Booking
+                    </button>
                 )}
             </div>
         </div>
     );
 };
 
-// --- POST AD FLOW ---
+// Helper for Recommendation Icon
+const SparklesIcon = ({size, className}: {size:number, className:string}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+);
+
+// ... PostAd ...
 const PostAd: React.FC = () => {
     const navigate = useNavigate();
-    const [step, setStep] = useState(1);
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [selectedType, setSelectedType] = useState<string>('Flat');
-    
-    // Fetch unlisted assets
-    const flats = DataService.getFlats().filter(f => !f.is_listed);
-    const vehicles = DataService.getVehicles().filter(v => !v.is_listed);
-    const gadgets = DataService.getGadgets().filter(g => !g.is_listed);
-
-    const handlePost = () => {
-        if (selectedId) {
-            DataService.toggleListing(selectedId, selectedType as any, true);
-            navigate('/marketplace/manage');
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <div className="bg-white p-5 border-b border-gray-100 sticky top-0 z-40 flex justify-between items-center">
-                <button onClick={() => step === 1 ? navigate(-1) : setStep(1)}><ChevronLeft size={24}/></button>
-                <h2 className="font-bold text-lg">Post to Marketplace</h2>
-                <div className="w-6"/>
-            </div>
-
-            <div className="flex-1 p-5 overflow-y-auto">
-                {step === 1 && (
-                    <div className="space-y-6">
-                        <div>
-                            <h3 className="font-bold text-xl text-gray-900 mb-1">Select Asset</h3>
-                            <p className="text-sm text-gray-500">Choose an item from your inventory to list.</p>
-                        </div>
-
-                        {/* List Groups */}
-                        <div className="space-y-4">
-                            {flats.length > 0 && (
-                                <div>
-                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Properties</h4>
-                                    {flats.map(f => (
-                                        <div key={f.id} onClick={() => { setSelectedId(f.id); setSelectedType('Flat'); setStep(2); }} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center mb-2 cursor-pointer hover:border-[#ff4b9a]">
-                                            <div><h5 className="font-bold text-gray-900">Flat {f.flat_no}</h5><p className="text-xs text-gray-500">{f.size_sqft} sqft • {f.floor_no}th Floor</p></div>
-                                            <ChevronRight size={16} className="text-gray-300"/>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            {vehicles.length > 0 && (
-                                <div>
-                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Vehicles</h4>
-                                    {vehicles.map(v => (
-                                        <div key={v.id} onClick={() => { setSelectedId(v.id); setSelectedType('Vehicle'); setStep(2); }} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center mb-2 cursor-pointer hover:border-[#ff4b9a]">
-                                            <div><h5 className="font-bold text-gray-900">{v.name}</h5><p className="text-xs text-gray-500">{v.license_plate}</p></div>
-                                            <ChevronRight size={16} className="text-gray-300"/>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            
-                            {flats.length === 0 && vehicles.length === 0 && gadgets.length === 0 && (
-                                <div className="text-center py-20">
-                                    <ShoppingBag size={48} className="mx-auto text-gray-300 mb-4"/>
-                                    <p className="text-gray-500 font-medium mb-4">No unlisted assets found.</p>
-                                    <button onClick={() => navigate('/myspace/inventory/select-type')} className="bg-[#2d1b4e] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg">Add to Inventory</button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {step === 2 && (
-                    <div className="space-y-6 animate-in slide-in-from-right">
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                            <h3 className="font-bold text-lg text-gray-900 mb-4">Listing Settings</h3>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-xs font-bold text-gray-500 mb-1.5 block">Rent Start Date</label>
-                                    <input type="date" className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" defaultValue={new Date().toISOString().slice(0, 10)}/>
-                                </div>
-                                <div className="flex items-center justify-between py-2">
-                                    <span className="font-bold text-gray-700">Negotiable?</span>
-                                    <div className="w-12 h-7 bg-[#ff4b9a] rounded-full p-1"><div className="w-5 h-5 bg-white rounded-full translate-x-5 shadow-sm"/></div>
-                                </div>
-                            </div>
-                        </div>
-                        <button onClick={handlePost} className="w-full py-4 bg-[#ff4b9a] text-white font-bold rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
-                            Post as TO-LET
-                        </button>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+    // Redirect to inventory config flow with flag
+    useEffect(() => {
+        navigate('/myspace/inventory/select-type', { state: { returnTo: '/marketplace', isMarketplace: true } });
+    }, []);
+    return null;
 };
 
 export default Marketplace;
